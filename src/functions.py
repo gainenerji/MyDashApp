@@ -3,13 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import requests
-import json
-import time
 import datetime
 import pytz
 import re
-from sqlalchemy import create_engine
-from sqlalchemy import text
 from ortak import *
 
 
