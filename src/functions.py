@@ -1,11 +1,22 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import requests
+import json
+import time
 import datetime
 import pytz
+import re
+from sqlalchemy import create_engine
+from sqlalchemy import text
 from ortak import *
 
 
+class Kontrat:
+    def __init__(self,name,table):
+        self.name = name
+        self.table = table
 
 def ptf_smf(start_date,end_date):
     url = "market/" + "mcp-smp" + "?startDate=" + start_date + "&endDate=" + end_date
@@ -24,6 +35,130 @@ def ptf_smf(start_date,end_date):
     df['Tarih'] = pd.to_datetime(df['Tarih']).dt.tz_localize(None)
     df = df.reset_index(drop=True)
     return df
+
+def parse_contract(df):
+    kontrat_liste = []
+    for kontrat in df["Kontrat Adı"].unique():
+        kontrat_liste.append(Kontrat(kontrat,df[df["Kontrat Adı"] == kontrat]))
+        
+    return kontrat_liste
+
+def contract_parser(dataframe):
+    # Kontrat türünü filtrele (PH olanları al)
+    filtered_df = dataframe[dataframe['conract'].str.startswith('PH')].copy()
+
+    # Kontrat adından tarih ve saat bilgilerini çıkar
+    date_pattern = re.compile(r'([P])([H])(\d{2})(\d{2})(\d{2})(\d{2})')
+    filtered_df['Tarih'] = filtered_df['conract'].apply(lambda x: '{}-{}-{}'.format(date_pattern.match(x).group(5), date_pattern.match(x).group(4), date_pattern.match(x).group(3)))
+    filtered_df['Saat'] = filtered_df['conract'].apply(lambda x: date_pattern.match(x).group(6))
+
+    # Sütun adlarını yeniden adlandır
+    filtered_df = filtered_df.rename(columns={
+        'id': 'ID',
+        "date": "İşlem Tarihi",
+        'conract': 'Kontrat Adı',
+        'price': 'Fiyat',
+        'quantity': 'Miktar (Lot)'
+    })
+    #İşlem Tarihi istanbul saat dilimi
+    target_timezone = pytz.timezone("Europe/Istanbul")
+    filtered_df["İşlem Tarihi"] = pd.to_datetime(filtered_df["İşlem Tarihi"], format='%Y-%m-%d %H:%M:%S')
+    filtered_df["İşlem Tarihi"] = filtered_df["İşlem Tarihi"].apply(lambda x: x.replace(tzinfo=pytz.UTC).astimezone(target_timezone))
+
+    # Sıralı sütunları düzenle
+    filtered_df = filtered_df[['ID',"İşlem Tarihi",'Kontrat Adı','Tarih', 'Saat', 'Fiyat', 'Miktar (Lot)']]
+
+
+    return filtered_df
+
+def trade_history_raw(start_date,end_date):
+
+    #take day before from start date
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    start_date = start_date + datetime.timedelta(days=-1)
+    start_date = start_date.strftime('%Y-%m-%d')
+
+
+    headers = {
+    'x-ibm-client-id': "",
+    'accept': "application/json"
+    }
+    
+    main_url = "https://seffaflik.epias.com.tr/transparency/service/"
+    sub_url = "market/" + "intra-day-trade-history" + "?startDate=" + start_date + "&endDate=" + end_date
+    corresponding_url = main_url + sub_url
+    resp = requests.get(corresponding_url,headers=headers)
+    resp.raise_for_status()
+    json = resp.json()
+
+    df = pd.DataFrame(json["body"]["intraDayTradeHistoryList"])
+
+    return df
+
+def trade_history_parsed(start_date,end_date):
+
+    #take day before from start date
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    start_date = start_date + datetime.timedelta(days=-1)
+    start_date = start_date.strftime('%Y-%m-%d')
+
+
+    headers = {
+    'x-ibm-client-id': "",
+    'accept': "application/json"
+    }
+    
+    main_url = "https://seffaflik.epias.com.tr/transparency/service/"
+    sub_url = "market/" + "intra-day-trade-history" + "?startDate=" + start_date + "&endDate=" + end_date
+    corresponding_url = main_url + sub_url
+    resp = requests.get(corresponding_url,headers=headers)
+    resp.raise_for_status()
+    json = resp.json()
+
+    df = pd.DataFrame(json["body"]["intraDayTradeHistoryList"])
+
+    
+    df = contract_parser(df)
+
+    # Tarih to datetime
+    df['Tarih'] = pd.to_datetime(df['Tarih'], format='%d-%m-%y')
+    # filter Tarih between start_date and end_date
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    start_date = start_date + datetime.timedelta(days=+1)
+
+    df = df[(df['Tarih'] >= start_date) & (df['Tarih'] <= end_date)]
+    #format date "dd-mm-yyy"
+    df['Tarih'] = df['Tarih'].dt.strftime('%d-%m-%Y')
+    # sort by Tarih and saat
+
+    
+    df['Kontrat_Datetime'] = pd.to_datetime(df['Tarih'] + ' ' + df['Saat'], format='%d-%m-%Y %H')
+    df["Kapanış Saati"] = df["Kontrat_Datetime"] - datetime.timedelta(hours=1)
+    #Açılış saati = Kontrat_Datetime - 1 gün
+    
+    #Açılış saati saat değeri 18 ile değiştir
+
+    #Kapanış saati ve kontrat datetime set timezone istanbul
+    target_timezone = pytz.timezone("Europe/Istanbul")
+    df['Kapanış Saati'] = pd.to_datetime(df['Kapanış Saati']).dt.tz_localize('UTC').dt.tz_convert(target_timezone)
+    df['Kontrat_Datetime'] = pd.to_datetime(df['Kontrat_Datetime']).dt.tz_localize('UTC').dt.tz_convert(target_timezone)
+    df["Açılış Saati"] = df["Kontrat_Datetime"] - datetime.timedelta(days=1)
+    df["Açılış Saati"] = df["Açılış Saati"].apply(lambda x: x.replace(hour=18))
+    df["Açılış Saati"] = df["Açılış Saati"].apply(lambda x: x.replace(tzinfo=pytz.UTC).astimezone(target_timezone))
+    
+
+
+
+    df = df.sort_values(by=['Tarih', 'Saat'])
+
+    return df
+
+def weighted_average(df):
+    weights = df['Miktar (Lot)']
+    weighted_sum = (df['Fiyat'] * weights).sum()
+    total_weight = weights.sum()
+    return weighted_sum / total_weight
 
 def get_order(start_date,end_date):
     url = "market/" + "bpm-order-summary" + "?startDate=" + start_date + "&endDate=" + end_date
@@ -331,4 +466,138 @@ def change_currency(currency,df):
     table = table.round(2)
 
     return table
+
+def get_euas_bilateral_sell_quantity(start_date,end_date):
+    headers = {
+    'x-ibm-client-id': "",
+    'accept': "application/json"
+    }
+    main_url = "https://seffaflik.epias.com.tr/transparency/service/"
+    sub_url = "market/" + "bilateral-contract-sell" + "?startDate=" + start_date + "&endDate=" + end_date + "&eic=40X000000000195P"
+    corresponding_url = main_url + sub_url
+    resp = requests.get(corresponding_url,headers=headers)
+    resp.raise_for_status()
+    json = resp.json()
+    df = pd.DataFrame(json["body"]["bilateralContractSellList"])
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.rename(columns={"date":"Tarih","quantity":"İA Satış Miktarı"})
+    return df
+
+def parse_contract(df):
+    kontrat_liste = []
+    for kontrat in df["Kontrat Adı"].unique():
+        kontrat_liste.append(Kontrat(kontrat,df[df["Kontrat Adı"] == kontrat]))
+        
+    return kontrat_liste
+
+def contract_parser(dataframe):
+    # Kontrat türünü filtrele (PH olanları al)
+    filtered_df = dataframe[dataframe['conract'].str.startswith('PH')].copy()
+
+    # Kontrat adından tarih ve saat bilgilerini çıkar
+    date_pattern = re.compile(r'([P])([H])(\d{2})(\d{2})(\d{2})(\d{2})')
+    filtered_df['Tarih'] = filtered_df['conract'].apply(lambda x: '{}-{}-{}'.format(date_pattern.match(x).group(5), date_pattern.match(x).group(4), date_pattern.match(x).group(3)))
+    filtered_df['Saat'] = filtered_df['conract'].apply(lambda x: date_pattern.match(x).group(6))
+
+    # Sütun adlarını yeniden adlandır
+    filtered_df = filtered_df.rename(columns={
+        'id': 'ID',
+        "date": "İşlem Tarihi",
+        'conract': 'Kontrat Adı',
+        'price': 'Fiyat',
+        'quantity': 'Miktar (Lot)'
+    })
+    #İşlem Tarihi istanbul saat dilimi
+    target_timezone = pytz.timezone("Europe/Istanbul")
+    filtered_df["İşlem Tarihi"] = pd.to_datetime(filtered_df["İşlem Tarihi"], format='%Y-%m-%d %H:%M:%S')
+    filtered_df["İşlem Tarihi"] = filtered_df["İşlem Tarihi"].apply(lambda x: x.replace(tzinfo=pytz.UTC).astimezone(target_timezone))
+
+    # Sıralı sütunları düzenle
+    filtered_df = filtered_df[['ID',"İşlem Tarihi",'Kontrat Adı','Tarih', 'Saat', 'Fiyat', 'Miktar (Lot)']]
+
+
+    return filtered_df
+
+def trade_history_raw(start_date,end_date):
+
+    #take day before from start date
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    start_date = start_date + datetime.timedelta(days=-1)
+    start_date = start_date.strftime('%Y-%m-%d')
+
+
+    headers = {
+    'x-ibm-client-id': "",
+    'accept': "application/json"
+    }
+    
+    main_url = "https://seffaflik.epias.com.tr/transparency/service/"
+    sub_url = "market/" + "intra-day-trade-history" + "?startDate=" + start_date + "&endDate=" + end_date
+    corresponding_url = main_url + sub_url
+    resp = requests.get(corresponding_url,headers=headers)
+    resp.raise_for_status()
+    json = resp.json()
+
+    df = pd.DataFrame(json["body"]["intraDayTradeHistoryList"])
+
+    return df
+
+def trade_history_parsed(start_date,end_date):
+
+    #take day before from start date
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    start_date = start_date + datetime.timedelta(days=-1)
+    start_date = start_date.strftime('%Y-%m-%d')
+
+
+    headers = {
+    'x-ibm-client-id': "",
+    'accept': "application/json"
+    }
+    
+    main_url = "https://seffaflik.epias.com.tr/transparency/service/"
+    sub_url = "market/" + "intra-day-trade-history" + "?startDate=" + start_date + "&endDate=" + end_date
+    corresponding_url = main_url + sub_url
+    resp = requests.get(corresponding_url,headers=headers)
+    resp.raise_for_status()
+    json = resp.json()
+
+    df = pd.DataFrame(json["body"]["intraDayTradeHistoryList"])
+
+    
+    df = contract_parser(df)
+
+    # Tarih to datetime
+    df['Tarih'] = pd.to_datetime(df['Tarih'], format='%d-%m-%y')
+    # filter Tarih between start_date and end_date
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    start_date = start_date + datetime.timedelta(days=+1)
+
+    df = df[(df['Tarih'] >= start_date) & (df['Tarih'] <= end_date)]
+    #format date "dd-mm-yyy"
+    df['Tarih'] = df['Tarih'].dt.strftime('%d-%m-%Y')
+    # sort by Tarih and saat
+
+    
+    df['Kontrat_Datetime'] = pd.to_datetime(df['Tarih'] + ' ' + df['Saat'], format='%d-%m-%Y %H')
+    df["Kapanış Saati"] = df["Kontrat_Datetime"] - datetime.timedelta(hours=1)
+    #Açılış saati = Kontrat_Datetime - 1 gün
+    
+    #Açılış saati saat değeri 18 ile değiştir
+
+    #Kapanış saati ve kontrat datetime set timezone istanbul
+    target_timezone = pytz.timezone("Europe/Istanbul")
+    df['Kapanış Saati'] = pd.to_datetime(df['Kapanış Saati']).dt.tz_localize('UTC').dt.tz_convert(target_timezone)
+    df['Kontrat_Datetime'] = pd.to_datetime(df['Kontrat_Datetime']).dt.tz_localize('UTC').dt.tz_convert(target_timezone)
+    df["Açılış Saati"] = df["Kontrat_Datetime"] - datetime.timedelta(days=1)
+    df["Açılış Saati"] = df["Açılış Saati"].apply(lambda x: x.replace(hour=18))
+    df["Açılış Saati"] = df["Açılış Saati"].apply(lambda x: x.replace(tzinfo=pytz.UTC).astimezone(target_timezone))
+    
+
+
+
+    df = df.sort_values(by=['Tarih', 'Saat'])
+
+    return df
 
