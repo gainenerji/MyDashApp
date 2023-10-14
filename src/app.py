@@ -28,6 +28,13 @@ if datetime.today().hour > 17:
     first_day_of_the_year_last_year = (datetime.today() - timedelta(days=365)).strftime('%Y-01-01')
     today_last_year = (datetime.today() - timedelta(days=365)).strftime('%Y-%m-%d')
     rapor_tarihi = datetime.today().strftime("%d-%m-%Y")
+
+    week_start_date = (datetime.today() - timedelta(days=datetime.today().weekday()))
+    week_start_date = week_start_date - timedelta(days=28)
+    week_end_date = (datetime.today() - timedelta(days=datetime.today().weekday())) - timedelta(days=1)
+    week_start_date = week_start_date.strftime('%Y-%m-%d')
+    week_end_date = week_end_date.strftime('%Y-%m-%d')
+
 else:
     today = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
     yesterday = (datetime.today() - timedelta(days=2)).strftime('%Y-%m-%d')
@@ -38,6 +45,12 @@ else:
     first_day_of_the_year_last_year = (datetime.today() - timedelta(days=365)).strftime('%Y-01-01')
     today_last_year = (datetime.today() - timedelta(days=365)).strftime('%Y-%m-%d')
     rapor_tarihi = (datetime.today() - timedelta(days=1)).strftime("%d-%m-%Y")
+
+    week_start_date = (datetime.today() - timedelta(days=datetime.today().weekday()))
+    week_start_date = week_start_date - timedelta(days=28)
+    week_end_date = (datetime.today() - timedelta(days=datetime.today().weekday())) - timedelta(days=1)
+    week_start_date = week_start_date.strftime('%Y-%m-%d')
+    week_end_date = week_end_date.strftime('%Y-%m-%d')
 
 price_yesterday = ptf_smf(yesterday, yesterday)
 price_today = ptf_smf(today, today)
@@ -389,7 +402,210 @@ kalan_yük_fig = px.line(df_kalan_yük, x="Saat", y=["Kalan Yük (D-1)","Kalan Y
                         labels={"value": "Kalan Yük", "variable":"Veri"},
                         template="plotly_white")
 ##############################################################################
+fiyat_week = ptf(week_start_date, week_end_date)
+tüketim_week = get_real_time_consumption(week_start_date, week_end_date)
+tüketim_week = tüketim_week.reset_index()
+fiyat_week["Tüketim"] = tüketim_week["Tüketim"]
 
+week1_raw = fiyat_week.iloc[:168]
+week2_raw = fiyat_week.iloc[168:336]
+week3_raw = fiyat_week.iloc[336:504]
+week4_raw = fiyat_week.iloc[504:672]
+
+
+week1 = pd.DataFrame(columns=["Veri Tipi", "Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
+week2 = pd.DataFrame(columns=["Veri Tipi", "Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
+week3 = pd.DataFrame(columns=["Veri Tipi", "Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
+week4 = pd.DataFrame(columns=["Veri Tipi", "Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
+
+week1["Veri Tipi"] = ["PTF(TL)", "PTF(USD)", "PTF(EUR)", "Tüketim"]
+week2["Veri Tipi"] = ["PTF(TL)", "PTF(USD)", "PTF(EUR)", "Tüketim"]
+week3["Veri Tipi"] = ["PTF(TL)", "PTF(USD)", "PTF(EUR)", "Tüketim"]
+week4["Veri Tipi"] = ["PTF(TL)", "PTF(USD)", "PTF(EUR)", "Tüketim"]
+
+week1["Pzt"] = (week1_raw.iloc[0:24].mean().values).round(2)
+week1["Salı"] = (week1_raw.iloc[24:48].mean().values).round(2)
+week1["Çarş"] = (week1_raw.iloc[48:72].mean().values).round(2)
+week1["Perş"] = (week1_raw.iloc[72:96].mean().values).round(2)
+week1["Cuma"] = (week1_raw.iloc[96:120].mean().values).round(2)
+week1["Cmt"] = (week1_raw.iloc[120:144].mean().values).round(2)
+week1["Paz"] = (week1_raw.iloc[144:168].mean().values).round(2)
+week1["Ortalama"] = week1.mean(axis=1).values.round(2)
+
+week2["Pzt"] = week2_raw.iloc[0:24].mean().values.round(2)
+week2["Salı"] = week2_raw.iloc[24:48].mean().values.round(2)
+week2["Çarş"] = week2_raw.iloc[48:72].mean().values.round(2)
+week2["Perş"] = week2_raw.iloc[72:96].mean().values.round(2)
+week2["Cuma"] = week2_raw.iloc[96:120].mean().values.round(2)
+week2["Cmt"] = week2_raw.iloc[120:144].mean().values.round(2)
+week2["Paz"] = week2_raw.iloc[144:168].mean().values.round(2)
+week2["Ortalama"] = week2.mean(axis=1).values.round(2)
+
+week3["Pzt"] = week3_raw.iloc[0:24].mean().values.round(2)
+week3["Salı"] = week3_raw.iloc[24:48].mean().values.round(2)
+week3["Çarş"] = week3_raw.iloc[48:72].mean().values.round(2)
+week3["Perş"] = week3_raw.iloc[72:96].mean().values.round(2)
+week3["Cuma"] = week3_raw.iloc[96:120].mean().values.round(2)
+week3["Cmt"] = week3_raw.iloc[120:144].mean().values.round(2)
+week3["Paz"] = week3_raw.iloc[144:168].mean().values.round(2)
+week3["Ortalama"] = week3.mean(axis=1).values.round(2)
+
+week4["Pzt"] = week4_raw.iloc[0:24].mean().values.round(2)
+week4["Salı"] = week4_raw.iloc[24:48].mean().values.round(2)
+week4["Çarş"] = week4_raw.iloc[48:72].mean().values.round(2)
+week4["Perş"] = week4_raw.iloc[72:96].mean().values.round(2)
+week4["Cuma"] = week4_raw.iloc[96:120].mean().values.round(2)
+week4["Cmt"] = week4_raw.iloc[120:144].mean().values.round(2)
+week4["Paz"] = week4_raw.iloc[144:168].mean().values.round(2)
+week4["Ortalama"] = week4.mean(axis=1).values.round(2)
+
+table_week1 = dash_table.DataTable(
+        week1.to_dict('records'),
+        [
+            dict(id = "Veri Tipi", name = "Veri Tipi" , type = "text"),
+            dict(id = "Pzt", name = "Pzt" , type = "numeric", format = Format().group(True)),
+            dict(id = "Salı", name = "Salı" , type = "numeric", format = Format().group(True)),
+            dict(id = "Çarş", name = "Çarş" , type = "numeric", format = Format().group(True)),
+            dict(id = "Perş", name = "Perş" , type = "numeric", format = Format().group(True)),
+            dict(id = "Cuma", name = "Cuma" , type = "numeric", format = Format().group(True)),
+            dict(id = "Cmt", name = "Cmt" , type = "numeric", format = Format().group(True)),
+            dict(id = "Paz", name = "Paz" , type = "numeric", format = Format().group(True)),
+            dict(id = "Ortalama", name = "Ortalama" , type = "numeric", format = Format().group(True)),
+
+        ],
+    style_as_list_view=True,
+    style_header={
+        'backgroundColor': '#285A84',
+        'fontWeight': 'bold',
+        "font":"bold 16px Calibri",
+        "color":"white",
+    },
+
+    style_cell={
+        'fontWeight': 'bold',
+        "font":"16px Calibri",
+    },
+
+    style_data_conditional=[
+        {
+            'if': {'row_index': 'odd'},
+            'backgroundColor': '#f5faff',
+        }
+        ]
+
+    )
+
+table_week2 = dash_table.DataTable(
+        week2.to_dict('records'),
+        [
+            dict(id = "Veri Tipi", name = "Veri Tipi" , type = "text"),
+            dict(id = "Pzt", name = "Pzt" , type = "numeric", format = Format().group(True)),
+            dict(id = "Salı", name = "Salı" , type = "numeric", format = Format().group(True)),
+            dict(id = "Çarş", name = "Çarş" , type = "numeric", format = Format().group(True)),
+            dict(id = "Perş", name = "Perş" , type = "numeric", format = Format().group(True)),
+            dict(id = "Cuma", name = "Cuma" , type = "numeric", format = Format().group(True)),
+            dict(id = "Cmt", name = "Cmt" , type = "numeric", format = Format().group(True)),
+            dict(id = "Paz", name = "Paz" , type = "numeric", format = Format().group(True)),
+            dict(id = "Ortalama", name = "Ortalama" , type = "numeric", format = Format().group(True)),
+
+        ],
+    style_as_list_view=True,
+    style_header={
+        'backgroundColor': '#285A84',
+        'fontWeight': 'bold',
+        "font":"bold 16px Calibri",
+        "color":"white",
+    },
+
+    style_cell={
+        'fontWeight': 'bold',
+        "font":"16px Calibri",
+    },
+
+    style_data_conditional=[
+        {
+            'if': {'row_index': 'odd'},
+            'backgroundColor': '#f5faff',
+        }
+        ]
+
+    )
+
+table_week3 = dash_table.DataTable(
+        week3.to_dict('records'),
+        [
+            dict(id = "Veri Tipi", name = "Veri Tipi" , type = "text"),
+            dict(id = "Pzt", name = "Pzt" , type = "numeric", format = Format().group(True)),
+            dict(id = "Salı", name = "Salı" , type = "numeric", format = Format().group(True)),
+            dict(id = "Çarş", name = "Çarş" , type = "numeric", format = Format().group(True)),
+            dict(id = "Perş", name = "Perş" , type = "numeric", format = Format().group(True)),
+            dict(id = "Cuma", name = "Cuma" , type = "numeric", format = Format().group(True)),
+            dict(id = "Cmt", name = "Cmt" , type = "numeric", format = Format().group(True)),
+            dict(id = "Paz", name = "Paz" , type = "numeric", format = Format().group(True)),
+            dict(id = "Ortalama", name = "Ortalama" , type = "numeric", format = Format().group(True)),
+
+        ],
+    style_as_list_view=True,
+    style_header={
+        'backgroundColor': '#285A84',
+        'fontWeight': 'bold',
+        "font":"bold 16px Calibri",
+        "color":"white",
+    },
+
+    style_cell={
+        'fontWeight': 'bold',
+        "font":"16px Calibri",
+    },
+
+    style_data_conditional=[
+        {
+            'if': {'row_index': 'odd'},
+            'backgroundColor': '#f5faff',
+        }
+        ]
+
+    )
+
+table_week4 = dash_table.DataTable(
+        week4.to_dict('records'),
+        [
+            dict(id = "Veri Tipi", name = "Veri Tipi" , type = "text"),
+            dict(id = "Pzt", name = "Pzt" , type = "numeric", format = Format().group(True)),
+            dict(id = "Salı", name = "Salı" , type = "numeric", format = Format().group(True)),
+            dict(id = "Çarş", name = "Çarş" , type = "numeric", format = Format().group(True)),
+            dict(id = "Perş", name = "Perş" , type = "numeric", format = Format().group(True)),
+            dict(id = "Cuma", name = "Cuma" , type = "numeric", format = Format().group(True)),
+            dict(id = "Cmt", name = "Cmt" , type = "numeric", format = Format().group(True)),
+            dict(id = "Paz", name = "Paz" , type = "numeric", format = Format().group(True)),
+            dict(id = "Ortalama", name = "Ortalama" , type = "numeric", format = Format().group(True)),
+
+        ],
+    style_as_list_view=True,
+    style_header={
+        'backgroundColor': '#285A84',
+        'fontWeight': 'bold',
+        "font":"bold 16px Calibri",
+        "color":"white",
+    },
+
+    style_cell={
+        'fontWeight': 'bold',
+        "font":"16px Calibri",
+    },
+
+    style_data_conditional=[
+        {
+            'if': {'row_index': 'odd'},
+            'backgroundColor': '#f5faff',
+        }
+        ]
+
+    )
+
+
+
+##############################################################################
 yesterday_order = get_order(yesterday, yesterday)
 yesterday_order = yesterday_order.reset_index(drop=True)
 
@@ -865,8 +1081,34 @@ app.layout = dbc.Container(
             [
                 dbc.Col([
                     table_price_date_summary
-                ]),
+                ],style={"margin-bottom":"30px"}),
+
                 html.Hr(),
+            ]
+
+        ),
+        dbc.Row(
+            dbc.Col(html.H4("Son 4 Haftaya Ait Günlük PTF ve Tüketim Değerleri",style={"color":"#285A84"})),
+            style={"margin-bottom":"10px"}
+        ),
+        dbc.Row(
+            [dbc.Col(
+                [
+                 html.H5("1.Hafta",style={"margin-bottom":"5px"}),
+                 html.Div(table_week1,style={"margin-bottom":"10px"}),
+                 html.H5("3.Hafta",style={"margin-bottom":"5px"}),
+                 html.Div(table_week3,style={"margin-bottom":"10px"}),
+                 ], width=6
+            ),
+            dbc.Col(
+                [
+                html.H5("2.Hafta",style={"margin-bottom":"5px"}),
+                html.Div(table_week2,style={"margin-bottom":"10px"}),
+                html.H5("4.Hafta",style={"margin-bottom":"5px"}),
+                html.Div(table_week4,style={"margin-bottom":"10px"}),
+                ], width=6,
+            ),
+            html.Hr(style={"margin-bottom":"30px","margin-top":"10px"}),
             ]
 
         ),
@@ -983,8 +1225,8 @@ app.layout = dbc.Container(
 
                 dbc.Col(html.Div(
                     [   
-                        dcc.Graph(figure = akarsu_kf_fig),
                         dcc.Graph(figure = yearly_price_usd_fig),
+                        dcc.Graph(figure = akarsu_kf_fig),
                         dcc.Graph(figure = yearly_negative_edmal_fig),
                         dcc.Graph(figure = yearly_negative_edmal_ptf_fig)
                     ]),
