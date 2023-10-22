@@ -3,6 +3,8 @@ pandas
 gunicorn
 dash_bootstrap_components
 matplotlib
-seaborn
 pytz
 requests
+plotly
+datetime
+re

@@ -616,15 +616,12 @@ def get_real_time_production_transposed(start_date,end_date):
     production_T["Üretimdeki Pay"] = production_T["Günlük Üretim"] / production_T["Günlük Üretim"].sum()
     # Aylık güncellemek gerek #
     production_T["Kurulu Güç"] = [25356,11440,10374,2048,1691,23285,8310,10765,11602,654]
-    production_T["Kapasite Faktörü"] = production_T["Saatlik Üretim"] / production_T["Kurulu Güç"]
+    
     # Add total row to table except "Kaynak Tipi" column
     production_T.loc['10'] = production_T.sum(numeric_only=True, axis=0)
     production_T["Kaynak Tipi"][10] = "Toplam"
-
-    # tüm değerleri 2 ondalık basamağa yuvarla
-    production_T = production_T.round(2)
+    production_T["Kapasite Faktörü"] = production_T["Saatlik Üretim"] / production_T["Kurulu Güç"]
     
-
     return production_T
 
 def kgup(start_date,end_date):
@@ -666,3 +663,231 @@ def get_river_capacity_factor(start_date,end_date):
 
     return kapasite
 
+def get_wind_capacity_factor(start_date,end_date):
+    kurulu_güç = 11602
+    kapasite = get_real_time_production(start_date,end_date)
+    kapasite = kapasite[['date','wind']]
+    kapasite.set_index('date', inplace=True)
+    kapasite.index = pd.to_datetime(kapasite.index)
+    kapasite["Kapasite Faktörü"] =kapasite["wind"] / (kurulu_güç)
+    kapasite = kapasite.groupby(pd.Grouper(freq='M')).mean()
+    kapasite = kapasite.reset_index()
+    kapasite = kapasite.rename(columns={"date": "Tarih"})
+    kapasite["Tarih"] = kapasite["Tarih"].dt.strftime('%Y-%m')
+    kapasite = kapasite.drop(columns=['wind'])
+    
+
+    return kapasite
+
+def parse_contract(df):
+    kontrat_liste = []
+    for kontrat in df["Kontrat Adı"].unique():
+        kontrat_liste.append(Kontrat(kontrat,df[df["Kontrat Adı"] == kontrat]))
+        
+    return kontrat_liste
+
+def contract_parser(dataframe):
+    # Kontrat türünü filtrele (PH olanları al)
+    filtered_df = dataframe[dataframe['conract'].str.startswith('PH')].copy()
+
+    # Kontrat adından tarih ve saat bilgilerini çıkar
+    date_pattern = re.compile(r'([P])([H])(\d{2})(\d{2})(\d{2})(\d{2})')
+    filtered_df['Tarih'] = filtered_df['conract'].apply(lambda x: '{}-{}-{}'.format(date_pattern.match(x).group(5), date_pattern.match(x).group(4), date_pattern.match(x).group(3)))
+    filtered_df['Saat'] = filtered_df['conract'].apply(lambda x: date_pattern.match(x).group(6))
+
+    # Sütun adlarını yeniden adlandır
+    filtered_df = filtered_df.rename(columns={
+        'id': 'ID',
+        "date": "İşlem Tarihi",
+        'conract': 'Kontrat Adı',
+        'price': 'Fiyat',
+        'quantity': 'Miktar (Lot)'
+    })
+    #İşlem Tarihi istanbul saat dilimi
+    target_timezone = pytz.timezone("Europe/Istanbul")
+    filtered_df["İşlem Tarihi"] = pd.to_datetime(filtered_df["İşlem Tarihi"], format='%Y-%m-%d %H:%M:%S')
+    filtered_df["İşlem Tarihi"] = filtered_df["İşlem Tarihi"].apply(lambda x: x.replace(tzinfo=pytz.UTC).astimezone(target_timezone))
+
+    # Sıralı sütunları düzenle
+    filtered_df = filtered_df[['ID',"İşlem Tarihi",'Kontrat Adı','Tarih', 'Saat', 'Fiyat', 'Miktar (Lot)']]
+
+
+    return filtered_df
+
+def trade_history_raw(start_date,end_date):
+
+    #take day before from start date
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    start_date = start_date + datetime.timedelta(days=-1)
+    start_date = start_date.strftime('%Y-%m-%d')
+
+
+    headers = {
+    'x-ibm-client-id': "",
+    'accept': "application/json"
+    }
+    
+    main_url = "https://seffaflik.epias.com.tr/transparency/service/"
+    sub_url = "market/" + "intra-day-trade-history" + "?startDate=" + start_date + "&endDate=" + end_date
+    corresponding_url = main_url + sub_url
+    resp = requests.get(corresponding_url,headers=headers)
+    resp.raise_for_status()
+    json = resp.json()
+
+    df = pd.DataFrame(json["body"]["intraDayTradeHistoryList"])
+
+    return df
+
+def trade_history_parsed(start_date,end_date):
+
+    #take day before from start date
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    start_date = start_date + datetime.timedelta(days=-1)
+    start_date = start_date.strftime('%Y-%m-%d')
+
+
+    headers = {
+    'x-ibm-client-id': "",
+    'accept': "application/json"
+    }
+    
+    main_url = "https://seffaflik.epias.com.tr/transparency/service/"
+    sub_url = "market/" + "intra-day-trade-history" + "?startDate=" + start_date + "&endDate=" + end_date
+    corresponding_url = main_url + sub_url
+    resp = requests.get(corresponding_url,headers=headers)
+    resp.raise_for_status()
+    json = resp.json()
+
+    df = pd.DataFrame(json["body"]["intraDayTradeHistoryList"])
+
+    
+    df = contract_parser(df)
+
+    # Tarih to datetime
+    df['Tarih'] = pd.to_datetime(df['Tarih'], format='%d-%m-%y')
+    # filter Tarih between start_date and end_date
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+    start_date = start_date + datetime.timedelta(days=+1)
+
+    df = df[(df['Tarih'] >= start_date) & (df['Tarih'] <= end_date)]
+    #format date "dd-mm-yyy"
+    df['Tarih'] = df['Tarih'].dt.strftime('%d-%m-%Y')
+    # sort by Tarih and saat
+
+    
+    df['Kontrat_Datetime'] = pd.to_datetime(df['Tarih'] + ' ' + df['Saat'], format='%d-%m-%Y %H')
+    df["Kapanış Saati"] = df["Kontrat_Datetime"] - datetime.timedelta(hours=1)
+    #Açılış saati = Kontrat_Datetime - 1 gün
+    
+    #Açılış saati saat değeri 18 ile değiştir
+
+    #Kapanış saati ve kontrat datetime set timezone istanbul
+    target_timezone = pytz.timezone("Europe/Istanbul")
+    df['Kapanış Saati'] = pd.to_datetime(df['Kapanış Saati']).dt.tz_localize('UTC').dt.tz_convert(target_timezone)
+    df['Kontrat_Datetime'] = pd.to_datetime(df['Kontrat_Datetime']).dt.tz_localize('UTC').dt.tz_convert(target_timezone)
+    df["Açılış Saati"] = df["Kontrat_Datetime"] - datetime.timedelta(days=1)
+    df["Açılış Saati"] = df["Açılış Saati"].apply(lambda x: x.replace(hour=18))
+    df["Açılış Saati"] = df["Açılış Saati"].apply(lambda x: x.replace(tzinfo=pytz.UTC).astimezone(target_timezone))
+    
+
+
+
+    df = df.sort_values(by=['Tarih', 'Saat'])
+
+    return df
+
+def weighted_average(df):
+    weights = df['Miktar (Lot)']
+    weighted_sum = (df['Fiyat'] * weights).sum()
+    total_weight = weights.sum()
+    return weighted_sum / total_weight
+
+def get_last_trades(kontrat,lot_limit):
+    last_trades = []
+    miktar = 0
+    i = 1
+    for i in range(len(kontrat.table)):
+        miktar += kontrat.table.iloc[-(i+1)]["Miktar (Lot)"]
+        last_trades.append(kontrat.table.iloc[-(i+1)])
+        if miktar > lot_limit:
+            break
+    if last_trades != []:
+        last_trades = pd.DataFrame(last_trades)
+        #sort last trades by İşlem Tarihi
+        last_trades = last_trades.sort_values(by="İşlem Tarihi",ignore_index=True)
+
+        if last_trades["Miktar (Lot)"].sum() > lot_limit:
+            last_trades["Miktar (Lot)"].iloc[0] = last_trades["Miktar (Lot)"].iloc[0] - (last_trades["Miktar (Lot)"].sum() - lot_limit)
+    else:
+        last_trades = pd.DataFrame(columns=["ID","İşlem Tarihi","Kontrat Adı","Tarih","Saat","Fiyat","Miktar (Lot)"])
+    return last_trades
+
+def get_first_trades(kontrat,lot_limit):
+    first_trades = []
+    miktar = 0
+    for i in range(len(kontrat.table)):
+        miktar += kontrat.table.iloc[i]["Miktar (Lot)"]
+        first_trades.append(kontrat.table.iloc[i])
+        if miktar > lot_limit:
+            break
+    if first_trades != []:
+        first_trades = pd.DataFrame(first_trades)
+        #sort last trades by İşlem Tarihi
+        first_trades = first_trades.sort_values(by="İşlem Tarihi",ignore_index=True)
+
+        if first_trades["Miktar (Lot)"].sum() > lot_limit:
+            first_trades["Miktar (Lot)"].iloc[-1] = first_trades["Miktar (Lot)"].iloc[-1] - (first_trades["Miktar (Lot)"].sum() - lot_limit)
+    else:
+        first_trades = pd.DataFrame(columns=["ID","İşlem Tarihi","Kontrat Adı","Tarih","Saat","Fiyat","Miktar (Lot)"])
+    return first_trades
+
+def get_max_trades(kontrat,lot):
+    df = kontrat.table
+
+    # Miktar sütununa göre büyükten küçüğe sıralayalım
+    df_sorted = df.sort_values(by='Fiyat', ascending=False)
+
+    # Toplam Miktar değeri 50'ye ulaşana kadar satırları seçelim
+    selected_rows = []
+    total_miktar = 0
+    for i in range(len(df_sorted)):
+        if total_miktar + df_sorted['Miktar (Lot)'].iloc[i] <= lot:
+            selected_rows.append(df_sorted.iloc[i])
+            total_miktar += df_sorted['Miktar (Lot)'].iloc[i]
+        elif total_miktar + df_sorted['Miktar (Lot)'].iloc[i] > lot:
+            df_sorted['Miktar (Lot)'].iloc[i] = lot - total_miktar
+            selected_rows.append(df_sorted.iloc[i])
+            total_miktar += df_sorted['Miktar (Lot)'].iloc[i]
+            break
+
+
+
+    # Seçilen satırları yeni bir veri çerçevesinde gösterelim
+    result_df = pd.DataFrame(selected_rows)
+    return result_df
+
+def get_min_trades(kontrat,lot):
+    df = kontrat.table
+
+    # Miktar sütununa göre küçükten büyüğe sıralayalım
+    df_sorted = df.sort_values(by='Fiyat', ascending=True)
+
+    # Toplam Miktar değeri 50'ye ulaşana kadar satırları seçelim
+    selected_rows = []
+    total_miktar = 0
+    for i in range(len(df_sorted)):
+        if total_miktar + df_sorted['Miktar (Lot)'].iloc[i] <= lot:
+            selected_rows.append(df_sorted.iloc[i])
+            total_miktar += df_sorted['Miktar (Lot)'].iloc[i]
+        elif total_miktar + df_sorted['Miktar (Lot)'].iloc[i] > lot:
+            df_sorted['Miktar (Lot)'].iloc[i] = lot - total_miktar
+            selected_rows.append(df_sorted.iloc[i])
+            total_miktar += df_sorted['Miktar (Lot)'].iloc[i]
+            break
+
+
+
+    # Seçilen satırları yeni bir veri çerçevesinde gösterelim
+    result_df = pd.DataFrame(selected_rows)
+    return result_df
