@@ -609,16 +609,10 @@ week4_raw = fiyat_week.iloc[504:672]
 
 
 
-week1 = pd.DataFrame(columns=["Veri Tipi", "Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
-week2 = pd.DataFrame(columns=["Veri Tipi", "Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
-week3 = pd.DataFrame(columns=["Veri Tipi", "Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
-week4 = pd.DataFrame(columns=["Veri Tipi", "Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
-
-week1["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
-week2["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
-week3["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
-week4["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
-
+week1 = pd.DataFrame(columns=["Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
+week2 = pd.DataFrame(columns=["Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
+week3 = pd.DataFrame(columns=["Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
+week4 = pd.DataFrame(columns=["Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
 
 week1["Pzt"] = (week1_raw.iloc[0:24].mean().values).round(2)
 week1["Salı"] = (week1_raw.iloc[24:48].mean().values).round(2)
@@ -655,6 +649,11 @@ week4["Cuma"] = week4_raw.iloc[96:120].mean().values.round(2)
 week4["Cmt"] = week4_raw.iloc[120:144].mean().values.round(2)
 week4["Paz"] = week4_raw.iloc[144:168].mean().values.round(2)
 week4["Ort"] = week4.mean(axis=1).values.round(2)
+
+week1["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
+week2["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
+week3["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
+week4["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
 
 week_start_date = datetime.strptime(week_start_date, '%Y-%m-%d')
 merged = pd.concat([week1, week2, week3, week4], axis=0)
