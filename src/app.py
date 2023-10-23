@@ -598,11 +598,14 @@ tüketim_week = tüketim_week.reset_index()
 fiyat_week["Tüketim"] = tüketim_week["Tüketim"]
 
 fiyat_week = fiyat_week.drop(columns=["Fiyat (EUR)"])
+fiyat_week = fiyat_week.drop(columns=["Tarih"])
 
 week1_raw = fiyat_week.iloc[:168]
 week2_raw = fiyat_week.iloc[168:336]
 week3_raw = fiyat_week.iloc[336:504]
 week4_raw = fiyat_week.iloc[504:672]
+
+
 
 
 
@@ -615,6 +618,7 @@ week1["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
 week2["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
 week3["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
 week4["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
+
 
 week1["Pzt"] = (week1_raw.iloc[0:24].mean().values).round(2)
 week1["Salı"] = (week1_raw.iloc[24:48].mean().values).round(2)
