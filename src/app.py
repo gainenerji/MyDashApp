@@ -1671,13 +1671,16 @@ yearly_price_usd_fig.add_layout_image(
     ))
 
 cons_2023 = get_real_time_consumption("2023-01-01",today)
-cons_2023_m = cons_2023.groupby(pd.Grouper(freq="M")).mean()
+
+cons_2023_m = cons_2023.groupby(pd.Grouper(freq="M")).agg({'Saat': 'mean', 'Tüketim': 'mean'})
 
 cons_2022 = get_real_time_consumption("2022-01-01","2022-12-31")
-cons_2022_m = cons_2022.groupby(pd.Grouper(freq="M")).mean()
+
+cons_2022_m = cons_2022.groupby(pd.Grouper(freq="M")).agg({'Saat': 'mean', 'Tüketim': 'mean'})
 
 cons_2021 = get_real_time_consumption("2021-01-01","2021-12-31")
-cons_2021_m = cons_2021.groupby(pd.Grouper(freq="M")).mean()
+
+cons_2021_m = cons_2021.groupby(pd.Grouper(freq="M")).agg({'Saat': 'mean', 'Tüketim': 'mean'})
 
 yearly_cons = pd.DataFrame( columns=["Ay","2021","2022","2023"])
 yearly_cons["Ay"] = cons_2021_m.index.month
