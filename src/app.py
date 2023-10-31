@@ -331,7 +331,9 @@ ptf_fig.update_layout(
         x=0.5,  # Legendi grafiğin ortasına hizala
         y=-0.15,  # X ekseni başlığından biraz daha aşağıda
         xanchor="center",  # X eksenindeki hizalamayı ortala
-    )
+    ),
+    width=800,
+    height=500,
 )
 
 ptf_fig.update_xaxes(range=[0, 23], constrain='domain')
@@ -509,13 +511,13 @@ değişim = [price_date_summary["TL Değişim"][0],price_date_summary["TL Deği�
 değişim = [f"{değişim[0]:.1f}%",f"{değişim[1]:.1f}%",f"{değişim[2]:.1f}%",f"{değişim[3]:.1f}%"]
 
 fig_tl = px.bar(tl_date_summary, x='Periyot', y='Fiyat', color="Yıl", barmode='group',
-                 labels={'Fiyat': 'Fiyat (TL/MWh)'},text="Fiyat")
+                 labels={'Fiyat': 'Fiyat (TL/MWh)'},text="Fiyat",color_discrete_sequence=["#285A84","#E13915"])
 
 fig_tl.update_traces(texttemplate='%{text:.2f}', textposition='inside')
 
 # USD için bar grafiği
 fig_usd = px.bar(usd_date_summary, x='Periyot', y='Fiyat', color="Yıl", barmode='group',
-                  labels={'Fiyat': 'Fiyat (USD/MWh)'},text="Fiyat" )
+                  labels={'Fiyat': 'Fiyat (USD/MWh)'},text="Fiyat",color_discrete_sequence=["#285A84","#E13915"] )
 
 fig_usd.update_traces(texttemplate='%{text:.2f}', textposition='inside')
 
@@ -540,7 +542,7 @@ for trace in fig_usd.data:
 fig.add_annotation(
     x=tl_date_summary['Periyot'][2], 
     y=tl_date_summary['Fiyat'][2], # Biraz daha yukarıda yer alması için 10 ekledim
-    text=f"{değişim[0]} 🠫",
+    text=f"{değişim[0]}🠫",
     showarrow=False,
     font=dict(color="red", size=16),
     row=1, col=1,
@@ -551,7 +553,7 @@ fig.add_annotation(
 fig.add_annotation(
     x=tl_date_summary['Periyot'][3], 
     y=tl_date_summary['Fiyat'][3], # Biraz daha yukarıda yer alması için 10 ekledim
-    text=f"{değişim[1]} 🠫",
+    text=f"{değişim[1]}🠫",
     showarrow=False,
     font=dict(color="red", size=16),
     row=1, col=1,
@@ -562,7 +564,7 @@ fig.add_annotation(
 fig.add_annotation(
     x=usd_date_summary['Periyot'][2], 
     y=usd_date_summary['Fiyat'][2], # Biraz daha yukarıda yer alması için 10 ekledim
-    text=f"{değişim[2]} 🠫",
+    text=f"{değişim[2]}🠫",
     showarrow=False,
     font=dict(color="red", size=16),
     row=1, col=2,
@@ -573,7 +575,7 @@ fig.add_annotation(
 fig.add_annotation(
     x=usd_date_summary['Periyot'][3], 
     y=usd_date_summary['Fiyat'][3], # Biraz daha yukarıda yer alması için 10 ekledim
-    text=f"{değişim[3]} 🠫",
+    text=f"{değişim[3]}🠫",
     showarrow=False,
     font=dict(color="red", size=16),
     row=1, col=2,
@@ -582,7 +584,7 @@ fig.add_annotation(
 )
 
 # Grafiğin layout'ını güncelle
-fig.update_layout(height=500, width=900, title_text="Fiyat Değişim Grafiği")
+fig.update_layout(height=500, width=800, title_text="Fiyat Değişim Grafiği")
 
 # Set y-axes range
 fig.update_yaxes(range=[0, 4000], row=1, col=1)
@@ -600,7 +602,9 @@ fig.update_layout(
         y=-0.15,  # X ekseni başlığından biraz daha aşağıda
         xanchor="center",  # X eksenindeki hizalamayı ortala
         
-    )
+    ),
+
+
 
 )
 
@@ -609,7 +613,7 @@ fig.add_annotation(
     yref="paper",
     x=0,
     y=-0.24,
-    text="<b>Ay Başından Bugüne</b>, içinden bulunduğumuz ayın ilk gününden; <b>Yıl Başından Bugüne</b>, yılın ilk gününden rapor tarihine kadar olan dönemi ifade etmektedir.",
+    text="<b>Ay Başından Bugüne</b>, içinden bulunduğumuz ayın ilk gününden; <b>Yıl Başından Bugüne</b>, yılın ilk gününden rapor tarihine kadar<br>olan dönemi ifade etmektedir.",
     showarrow=False,
     font=dict(color="#73777B", size=9),
     yanchor="top",
@@ -617,6 +621,7 @@ fig.add_annotation(
 )
 
 
+fig.update_layout(margin=dict(t=20, b=120))
 
 fig.add_layout_image(
     dict(
@@ -2197,8 +2202,10 @@ nav_contents = [
 
 
 app = Dash(external_stylesheets=[dbc.themes.FLATLY])
+
+app.title = 'Gain Enerji - Günlük Piyasa Raporu'
+
 server = app.server
-# Set size of the app 1920*1080
 app.css.config.serve_locally = True
 app.scripts.config.serve_locally = True
 app.config['suppress_callback_exceptions'] = True
@@ -2262,13 +2269,13 @@ app.layout = dbc.Container(
 
                     dbc.Row(
                         dbc.Col([
-                            dcc.Graph(figure = ptf_fig, style={"margin-top":"-30px"}),
-                        ],width=12,style={"margin-bottom":"30px"})
+                            dcc.Graph(figure = ptf_fig, style={"margin-top":"-60px","margin-left":"50px"}),
+                        ],width=12,style={"margin-bottom":"10px"})
                     ),
 
                     dbc.Row(
                         dbc.Col(
-                            dcc.Graph(figure = fig, style={}),
+                            dcc.Graph(figure = fig, style={"margin-left":"50px"}),
                         )
                     ),
                 
@@ -2313,13 +2320,13 @@ app.layout = dbc.Container(
             [
                 dbc.Col(html.Div(
                 [
-                    dcc.Graph(figure = load_fig,style={"padding-bottom":"40px","margin-bottom":"30px"}), dcc.Graph(figure = coal_kgup_fig,style={"padding-bottom":"40px","margin-bottom":"30px"})
+                    dcc.Graph(figure = load_fig,style={"padding-bottom":"40px","margin-bottom":"30px",}), dcc.Graph(figure = coal_kgup_fig,style={"padding-bottom":"40px","margin-bottom":"30px"})
                 ]
                 )),
 
                 dbc.Col(html.Div(
                 [
-                    dcc.Graph(figure = production_fb_fig,style={"padding-bottom":"40px","margin-bottom":"30px"}), dcc.Graph(figure = kalan_yük_fig)
+                    dcc.Graph(figure = production_fb_fig,style={"padding-bottom":"40px","margin-bottom":"30px","margin-left":"20px"}), dcc.Graph(figure = kalan_yük_fig, style={"margin-left":"20px"})
                 ],
                 style={"margin-bottom":"50px"}
                 )),
@@ -2427,7 +2434,7 @@ app.layout = dbc.Container(
             dbc.Col(
                 html.Div(
                     [
-                        dcc.Graph(figure = makas_fig,style={"margin-bottom":"30px"})
+                        dcc.Graph(figure = makas_fig,style={"margin-bottom":"30px","margin-left":"20px"})
                     ]),
                     width=6,
             ),]
@@ -2446,7 +2453,7 @@ app.layout = dbc.Container(
                 dbc.Col(
                     html.Div(
                         [
-                            dcc.Graph(figure=ptf_smf_fig)
+                            dcc.Graph(figure=ptf_smf_fig,style={"margin-left":"20px"})
                         ]
                     )
                 ),
@@ -2488,10 +2495,10 @@ app.layout = dbc.Container(
 
                 dbc.Col(html.Div(
                     [   
-                        dcc.Graph(figure = yearly_price_usd_fig),
-                        dcc.Graph(figure = rüzgar_kf_fig),
-                        dcc.Graph(figure = yearly_negative_edmal_fig),
-                        dcc.Graph(figure = yearly_negative_edmal_ptf_fig)
+                        dcc.Graph(figure = yearly_price_usd_fig, style={"margin-left":"20px"}),
+                        dcc.Graph(figure = rüzgar_kf_fig, style={"margin-left":"20px"}),
+                        dcc.Graph(figure = yearly_negative_edmal_fig, style={"margin-left":"20px"}),
+                        dcc.Graph(figure = yearly_negative_edmal_ptf_fig, style={"margin-left":"20px"}),
                     ]),
                 style={"margin-bottom":"30px"},
                 ),
