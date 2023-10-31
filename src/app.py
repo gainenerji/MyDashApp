@@ -1745,8 +1745,10 @@ price_2021["-EDMal"] = round(price_2021["-EDF"] - price_2021["PTF"],2)
 
 #Aylık ortalamalar
 price_2021["Ay"] = price_2021["Tarih"].dt.month
-price_2021_aylik = price_2021.groupby("Ay").mean()
+price_2021.set_index("Tarih", inplace=True)
+price_2021_aylik = price_2021.groupby(pd.Grouper(freq="M")).agg({'PTF': 'mean', 'SMF': 'mean', '+EDF': 'mean', '-EDF': 'mean', '+EDMal': 'mean', '-EDMal': 'mean'})
 price_2021_aylik = price_2021_aylik.reset_index()
+price_2021_aylik["Ay"] = range(1,13)
 
 
 price_2022["Tarih"] = pd.to_datetime(price_2022["Tarih"])
@@ -1758,8 +1760,10 @@ price_2022["+EDMal"] = round(price_2022["PTF"] - price_2022["+EDF"],2)
 price_2022["-EDMal"] = round(price_2022["-EDF"] - price_2022["PTF"],2)
 
 price_2022["Ay"] = price_2022["Tarih"].dt.month
-price_2022_aylik = price_2022.groupby("Ay").mean()
+price_2022.set_index("Tarih", inplace=True)
+price_2022_aylik = price_2022.groupby(pd.Grouper(freq="M")).agg({'PTF': 'mean', 'SMF': 'mean', '+EDF': 'mean', '-EDF': 'mean', '+EDMal': 'mean', '-EDMal': 'mean'})
 price_2022_aylik = price_2022_aylik.reset_index()
+price_2022_aylik["Ay"] = range(1,13)
 
 
 price_2023["Tarih"] = pd.to_datetime(price_2023["Tarih"])
@@ -1771,9 +1775,10 @@ price_2023["+EDMal"] = round(price_2023["PTF"] - price_2023["+EDF"],2)
 price_2023["-EDMal"] = round(price_2023["-EDF"] - price_2023["PTF"],2)
 
 price_2023["Ay"] = price_2023["Tarih"].dt.month
-price_2023_aylik = price_2023.groupby("Ay").mean()
-price_2023_aylik = price_2023_aylik.reset_index()
-
+price_2023.set_index("Tarih", inplace=True)
+price_2023_aylik = price_2023.groupby(pd.Grouper(freq="M")).agg({'PTF': 'mean', 'SMF': 'mean', '+EDF': 'mean', '-EDF': 'mean', '+EDMal': 'mean', '-EDMal': 'mean'})
+price_2023_aylik = price_2023_aylik.reset_index()   
+price_2023_aylik["Ay"] = range(1,int(datetime.today().strftime('%m')) +1)
 
 
 yearly_price = pd.DataFrame(columns=["Ay","2021 PTF", "2022 PTF", "2023 PTF","2021 +EDMal", "2022 +EDMal", "2023 +EDMal", "2021 -EDMal", "2022 -EDMal", "2023 -EDMal"])
