@@ -1,7 +1,6 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import os
 from dash import Dash, html, dash_table,dcc
 from dash.dash_table import DataTable
 from dash.dash_table.Format import Format, Group, Scheme, Symbol
@@ -2593,5 +2592,4 @@ app.layout = dbc.Container(
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8050))
-    app.run(debug=True,host='0.0.0.0', port=port)
+    app.run(debug=True,host='0.0.0.0', port=10000)
