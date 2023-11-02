@@ -891,6 +891,7 @@ fiyat_week = ptf(week_start_date, week_end_date)
 tüketim_week = get_real_time_consumption(week_start_date, week_end_date)
 tüketim_week = tüketim_week.reset_index()
 fiyat_week["Tüketim"] = tüketim_week["Tüketim"]
+fiyat_week["Tüketim"] = fiyat_week["Tüketim"]/1000
 
 fiyat_week = fiyat_week.drop(columns=["Fiyat (EUR)"])
 fiyat_week = fiyat_week.drop(columns=["Tarih"])
@@ -904,50 +905,88 @@ week4_raw = fiyat_week.iloc[504:672]
 
 
 
+week1_list = [  
+                week1_raw["Fiyat (TL)"].iloc[0:24].mean().round(2), week1_raw["Fiyat (USD)"].iloc[0:24].mean().round(2), week1_raw["Tüketim"].iloc[0:24].sum().round(2),
+                week1_raw["Fiyat (TL)"].iloc[24:48].mean().round(2), week1_raw["Fiyat (USD)"].iloc[24:48].mean().round(2), week1_raw["Tüketim"].iloc[24:48].sum().round(2),
+                week1_raw["Fiyat (TL)"].iloc[48:72].mean().round(2), week1_raw["Fiyat (USD)"].iloc[48:72].mean().round(2), week1_raw["Tüketim"].iloc[48:72].sum().round(2),
+                week1_raw["Fiyat (TL)"].iloc[72:96].mean().round(2), week1_raw["Fiyat (USD)"].iloc[72:96].mean().round(2), week1_raw["Tüketim"].iloc[72:96].sum().round(2),
+                week1_raw["Fiyat (TL)"].iloc[96:120].mean().round(2), week1_raw["Fiyat (USD)"].iloc[96:120].mean().round(2), week1_raw["Tüketim"].iloc[96:120].sum().round(2),
+                week1_raw["Fiyat (TL)"].iloc[120:144].mean().round(2), week1_raw["Fiyat (USD)"].iloc[120:144].mean().round(2), week1_raw["Tüketim"].iloc[120:144].sum().round(2),
+                week1_raw["Fiyat (TL)"].iloc[144:168].mean().round(2), week1_raw["Fiyat (USD)"].iloc[144:168].mean().round(2), week1_raw["Tüketim"].iloc[144:168].sum().round(2),
+            ]
+
 week1 = pd.DataFrame(columns=["Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
-week2 = pd.DataFrame(columns=["Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
-week3 = pd.DataFrame(columns=["Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
-week4 = pd.DataFrame(columns=["Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
-
-week1["Pzt"] = (week1_raw.iloc[0:24].mean().values).round(2)
-week1["Salı"] = (week1_raw.iloc[24:48].mean().values).round(2)
-week1["Çarş"] = (week1_raw.iloc[48:72].mean().values).round(2)
-week1["Perş"] = (week1_raw.iloc[72:96].mean().values).round(2)
-week1["Cuma"] = (week1_raw.iloc[96:120].mean().values).round(2)
-week1["Cmt"] = (week1_raw.iloc[120:144].mean().values).round(2)
-week1["Paz"] = (week1_raw.iloc[144:168].mean().values).round(2)
+week1["Pzt"] = week1_list[0:3]
+week1["Salı"] = week1_list[3:6]
+week1["Çarş"] = week1_list[6:9]
+week1["Perş"] = week1_list[9:12]
+week1["Cuma"] = week1_list[12:15]
+week1["Cmt"] = week1_list[15:18]
+week1["Paz"] = week1_list[18:21]
 week1["Ort"] = week1.mean(axis=1).values.round(2)
-
-week2["Pzt"] = week2_raw.iloc[0:24].mean().values.round(2)
-week2["Salı"] = week2_raw.iloc[24:48].mean().values.round(2)
-week2["Çarş"] = week2_raw.iloc[48:72].mean().values.round(2)
-week2["Perş"] = week2_raw.iloc[72:96].mean().values.round(2)
-week2["Cuma"] = week2_raw.iloc[96:120].mean().values.round(2)
-week2["Cmt"] = week2_raw.iloc[120:144].mean().values.round(2)
-week2["Paz"] = week2_raw.iloc[144:168].mean().values.round(2)
-week2["Ort"] = week2.mean(axis=1).values.round(2)
-
-week3["Pzt"] = week3_raw.iloc[0:24].mean().values.round(2)
-week3["Salı"] = week3_raw.iloc[24:48].mean().values.round(2)
-week3["Çarş"] = week3_raw.iloc[48:72].mean().values.round(2)
-week3["Perş"] = week3_raw.iloc[72:96].mean().values.round(2)
-week3["Cuma"] = week3_raw.iloc[96:120].mean().values.round(2)
-week3["Cmt"] = week3_raw.iloc[120:144].mean().values.round(2)
-week3["Paz"] = week3_raw.iloc[144:168].mean().values.round(2)
-week3["Ort"] = week3.mean(axis=1).values.round(2)
-
-week4["Pzt"] = week4_raw.iloc[0:24].mean().values.round(2)
-week4["Salı"] = week4_raw.iloc[24:48].mean().values.round(2)
-week4["Çarş"] = week4_raw.iloc[48:72].mean().values.round(2)
-week4["Perş"] = week4_raw.iloc[72:96].mean().values.round(2)
-week4["Cuma"] = week4_raw.iloc[96:120].mean().values.round(2)
-week4["Cmt"] = week4_raw.iloc[120:144].mean().values.round(2)
-week4["Paz"] = week4_raw.iloc[144:168].mean().values.round(2)
-week4["Ort"] = week4.mean(axis=1).values.round(2)
-
 week1["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
+
+week2_list = [  
+                week2_raw["Fiyat (TL)"].iloc[0:24].mean().round(2), week2_raw["Fiyat (USD)"].iloc[0:24].mean().round(2), week2_raw["Tüketim"].iloc[0:24].sum().round(2),
+                week2_raw["Fiyat (TL)"].iloc[24:48].mean().round(2), week2_raw["Fiyat (USD)"].iloc[24:48].mean().round(2), week2_raw["Tüketim"].iloc[24:48].sum().round(2),
+                week2_raw["Fiyat (TL)"].iloc[48:72].mean().round(2), week2_raw["Fiyat (USD)"].iloc[48:72].mean().round(2), week2_raw["Tüketim"].iloc[48:72].sum().round(2),
+                week2_raw["Fiyat (TL)"].iloc[72:96].mean().round(2), week2_raw["Fiyat (USD)"].iloc[72:96].mean().round(2), week2_raw["Tüketim"].iloc[72:96].sum().round(2),
+                week2_raw["Fiyat (TL)"].iloc[96:120].mean().round(2), week2_raw["Fiyat (USD)"].iloc[96:120].mean().round(2), week2_raw["Tüketim"].iloc[96:120].sum().round(2),
+                week2_raw["Fiyat (TL)"].iloc[120:144].mean().round(2), week2_raw["Fiyat (USD)"].iloc[120:144].mean().round(2), week2_raw["Tüketim"].iloc[120:144].sum().round(2),
+                week2_raw["Fiyat (TL)"].iloc[144:168].mean().round(2), week2_raw["Fiyat (USD)"].iloc[144:168].mean().round(2), week2_raw["Tüketim"].iloc[144:168].sum().round(2),
+            ]
+
+week2 = pd.DataFrame(columns=["Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
+week2["Pzt"] = week2_list[0:3]
+week2["Salı"] = week2_list[3:6]
+week2["Çarş"] = week2_list[6:9]
+week2["Perş"] = week2_list[9:12]
+week2["Cuma"] = week2_list[12:15]
+week2["Cmt"] = week2_list[15:18]
+week2["Paz"] = week2_list[18:21]
+week2["Ort"] = week2.mean(axis=1).values.round(2)
 week2["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
+
+week3_list = [
+                week3_raw["Fiyat (TL)"].iloc[0:24].mean().round(2), week3_raw["Fiyat (USD)"].iloc[0:24].mean().round(2), week3_raw["Tüketim"].iloc[0:24].sum().round(2),
+                week3_raw["Fiyat (TL)"].iloc[24:48].mean().round(2), week3_raw["Fiyat (USD)"].iloc[24:48].mean().round(2), week3_raw["Tüketim"].iloc[24:48].sum().round(2),
+                week3_raw["Fiyat (TL)"].iloc[48:72].mean().round(2), week3_raw["Fiyat (USD)"].iloc[48:72].mean().round(2), week3_raw["Tüketim"].iloc[48:72].sum().round(2),
+                week3_raw["Fiyat (TL)"].iloc[72:96].mean().round(2), week3_raw["Fiyat (USD)"].iloc[72:96].mean().round(2), week3_raw["Tüketim"].iloc[72:96].sum().round(2),
+                week3_raw["Fiyat (TL)"].iloc[96:120].mean().round(2), week3_raw["Fiyat (USD)"].iloc[96:120].mean().round(2), week3_raw["Tüketim"].iloc[96:120].sum().round(2),
+                week3_raw["Fiyat (TL)"].iloc[120:144].mean().round(2), week3_raw["Fiyat (USD)"].iloc[120:144].mean().round(2), week3_raw["Tüketim"].iloc[120:144].sum().round(2),
+                week3_raw["Fiyat (TL)"].iloc[144:168].mean().round(2), week3_raw["Fiyat (USD)"].iloc[144:168].mean().round(2), week3_raw["Tüketim"].iloc[144:168].sum().round(2),
+            ]
+
+week3 = pd.DataFrame(columns=["Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
+week3["Pzt"] = week3_list[0:3]
+week3["Salı"] = week3_list[3:6]
+week3["Çarş"] = week3_list[6:9]
+week3["Perş"] = week3_list[9:12]
+week3["Cuma"] = week3_list[12:15]
+week3["Cmt"] = week3_list[15:18]
+week3["Paz"] = week3_list[18:21]
+week3["Ort"] = week3.mean(axis=1).values.round(2)
 week3["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
+
+week4_list = [
+                week4_raw["Fiyat (TL)"].iloc[0:24].mean().round(2), week4_raw["Fiyat (USD)"].iloc[0:24].mean().round(2), week4_raw["Tüketim"].iloc[0:24].sum().round(2),
+                week4_raw["Fiyat (TL)"].iloc[24:48].mean().round(2), week4_raw["Fiyat (USD)"].iloc[24:48].mean().round(2), week4_raw["Tüketim"].iloc[24:48].sum().round(2),
+                week4_raw["Fiyat (TL)"].iloc[48:72].mean().round(2), week4_raw["Fiyat (USD)"].iloc[48:72].mean().round(2), week4_raw["Tüketim"].iloc[48:72].sum().round(2),
+                week4_raw["Fiyat (TL)"].iloc[72:96].mean().round(2), week4_raw["Fiyat (USD)"].iloc[72:96].mean().round(2), week4_raw["Tüketim"].iloc[72:96].sum().round(2),
+                week4_raw["Fiyat (TL)"].iloc[96:120].mean().round(2), week4_raw["Fiyat (USD)"].iloc[96:120].mean().round(2), week4_raw["Tüketim"].iloc[96:120].sum().round(2),
+                week4_raw["Fiyat (TL)"].iloc[120:144].mean().round(2), week4_raw["Fiyat (USD)"].iloc[120:144].mean().round(2), week4_raw["Tüketim"].iloc[120:144].sum().round(2),
+                week4_raw["Fiyat (TL)"].iloc[144:168].mean().round(2), week4_raw["Fiyat (USD)"].iloc[144:168].mean().round(2), week4_raw["Tüketim"].iloc[144:168].sum().round(2),
+            ]
+
+week4 = pd.DataFrame(columns=["Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
+week4["Pzt"] = week4_list[0:3]
+week4["Salı"] = week4_list[3:6]
+week4["Çarş"] = week4_list[6:9]
+week4["Perş"] = week4_list[9:12]
+week4["Cuma"] = week4_list[12:15]
+week4["Cmt"] = week4_list[15:18]
+week4["Paz"] = week4_list[18:21]
+week4["Ort"] = week4.mean(axis=1).values.round(2)
 week4["Veri Tipi"] = ["PTF(TL)", "PTF(USD)","Tüketim"]
 
 week_start_date = datetime.strptime(week_start_date, '%Y-%m-%d')
@@ -955,7 +994,7 @@ merged = pd.concat([week1, week2, week3, week4], axis=0)
 
 table_last_four_week = pd.DataFrame(columns=["Hafta","Veri Tipi", "Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
 table_last_four_week["Hafta"] = [week_start_date.strftime("%d.%m") + " - " + (week_start_date+timedelta(days=6)).strftime("%d.%m"),"","",(week_start_date + timedelta(days=7)).strftime("%d.%m") + " - " + (week_start_date + timedelta(days=13)).strftime("%d.%m") ,"","", (week_start_date + timedelta(days=14)).strftime("%d.%m") + " - " + (week_start_date + timedelta(days=20)).strftime("%d.%m"),"","", (week_start_date + timedelta(days=21)).strftime("%d.%m") + " - " + (week_start_date + timedelta(days=27)).strftime("%d.%m"),"",""]
-table_last_four_week["Veri Tipi"] = ["PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (MWh)","PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (MWh)","PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (MWh)","PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (MWh)"]
+table_last_four_week["Veri Tipi"] = ["PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (GWh)","PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (GWh)","PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (GWh)","PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (GWh)"]
 table_last_four_week["Pzt"] = merged["Pzt"].values
 table_last_four_week["Salı"] = merged["Salı"].values
 table_last_four_week["Çarş"] = merged["Çarş"].values
@@ -2478,10 +2517,10 @@ app.layout = dbc.Container(
                           html.P([  
                                     html.B("Net Talimat Hacmi,"),
                                     " TEİAŞ tarafından ilgili saatte verilen tüm YAL (pozitif) ve YAT (negatif) talimatlarının toplamıdır.",
-                                    ], style={"font-size": "10px", "color": "#73777B","margin-top":"-10px","font-style":"italic"}),
+                                    ], style={"font-size": "10px", "color": "#73777B","margin-top":"-10px","margin-bottom":"20px","font-style":"italic"}),
 
                         ],
-                        style={"margin-bottom":"30px"}
+                        style={"margin-bottom":"50px"}
                           ),
                 ],width=12
                 
