@@ -398,21 +398,21 @@ def get_real_time_production_transposed(start_date,end_date):
     table = table.drop(columns=['date'])
     #transpoze table
     production_T = pd.DataFrame(columns=['Kaynak Tipi', 'Günlük Üretim',"Saatlik Üretim","Üretimdeki Pay","Kurulu Güç","Kapasite Faktörü"])
-    production_T["Kaynak Tipi"] = ["Doğal Gaz","Linyit","İthal Kömür","Biyokütle","Jeotermal","Barajlı","Akarsu","Güneş (Lisanslı)","Güneş (Lisanssız)","Rüzgar","Diğer"]
+    production_T["Kaynak Tipi"] = ["Doğal Gaz","Linyit","İthal Kömür","Biyokütle","Jeotermal","Barajlı","Akarsu","Güneş (Lisanslı)","Rüzgar","Diğer"]
     production_T["Günlük Üretim"] = [table["naturalGas"].sum() + table["lng"].sum(),
                                     table["lignite"].sum() + table["blackCoal"].sum() + table["asphaltiteCoal"].sum(),
                                     table["importCoal"].sum(),table["biomass"].sum(),table["geothermal"].sum(),table["dammedHydro"].sum(),
-                                    table["river"].sum(),table["sun"].sum(),np.nan,table["wind"].sum(),
+                                    table["river"].sum(),table["sun"].sum(),table["wind"].sum(),
                                     table["naphta"].sum() + table["fueloil"].sum() + table["gasOil"].sum() + table["wasteheat"].sum(),
                                     ]
     production_T["Saatlik Üretim"] = production_T["Günlük Üretim"] / 24
     production_T["Üretimdeki Pay"] = production_T["Günlük Üretim"] / production_T["Günlük Üretim"].sum()
     # Aylık güncellemek gerek #
-    production_T["Kurulu Güç"] = [25356,11440,10374,2048,1691,23285,8310,10765,7482,11602,654]
+    production_T["Kurulu Güç"] = [25356,11440,10374,2048,1691,23285,8310,1564,11602,654]
     
     # Add total row to table except "Kaynak Tipi" column
     production_T.loc['10'] = production_T.sum(numeric_only=True, axis=0)
-    production_T["Kaynak Tipi"][11] = "Toplam"
+    production_T["Kaynak Tipi"][10] = "Toplam"
     production_T["Kapasite Faktörü"] = production_T["Saatlik Üretim"] / production_T["Kurulu Güç"]
 
     #change npnan to ""

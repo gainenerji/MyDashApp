@@ -37,6 +37,7 @@ saat = pd.Series(range(0,24))
 watermark_src = "https://lh3.googleusercontent.com/p/AF1QipOZB0N4E1nh2RqCcWemoZpPNCpZ6JwOc-HDzhRg=s1360-w1360-h1020"
 if datetime.today().hour >= 17:
     today = datetime.today().strftime('%Y-%m-%d')
+    print(today)
     yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
     tomorrow = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
     first_day_of_the_month = datetime.today().strftime('%Y-%m-01')
@@ -44,8 +45,7 @@ if datetime.today().hour >= 17:
     first_day_of_the_month_last_year = (datetime.today() - timedelta(days=365)).strftime('%Y-%m-01')
     first_day_of_the_year_last_year = (datetime.today() - timedelta(days=365)).strftime('%Y-01-01')
     today_last_year = (datetime.today() - timedelta(days=365)).strftime('%Y-%m-%d')
-    rapor_tarihi = datetime.today().strftime("%d.%m.%Y")
-    rapor_tarihi = html.Span(rapor_tarihi, style={"color": "#0d1f2e"})
+    rapor_tarihi = datetime.today().strftime("%d-%m-%Y")
 
     week_start_date = (datetime.today() - timedelta(days=datetime.today().weekday()))
     week_start_date = week_start_date - timedelta(days=28)
@@ -57,12 +57,15 @@ else:
     today = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
     yesterday = (datetime.today() - timedelta(days=2)).strftime('%Y-%m-%d')
     tomorrow = datetime.today().strftime('%Y-%m-%d')
-    first_day_of_the_month = datetime.today().strftime('%Y-%m-01')
+    if datetime.today().day == 1:
+        first_day_of_the_month = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-01')
+    else:
+        first_day_of_the_month = datetime.today().strftime('%Y-%m-01')
     first_day_of_the_year = datetime.today().strftime('%Y-01-01')
     first_day_of_the_month_last_year = (datetime.today() - timedelta(days=365)).strftime('%Y-%m-01')
     first_day_of_the_year_last_year = (datetime.today() - timedelta(days=365)).strftime('%Y-01-01')
     today_last_year = (datetime.today() - timedelta(days=365)).strftime('%Y-%m-%d')
-    rapor_tarihi = (datetime.today() - timedelta(days=1)).strftime("%d.%m.%Y")
+    rapor_tarihi = (datetime.today() - timedelta(days=1)).strftime("%d-%m-%Y")
 
     week_start_date = (datetime.today() - timedelta(days=datetime.today().weekday()))
     week_start_date = week_start_date - timedelta(days=28)
@@ -153,11 +156,11 @@ df_avg_eur_display['SMF(D-1)'] = df_avg_eur['SMF(D-1)'].apply(lambda x: f'{x:.2f
 
 
 #add new row to ORT column
-df_avg.loc[-1] = ["TL",df_avg["PTF(D+1)"],df_avg["PTF(D)"],df_avg["PTF(D-1)"],df_avg["SMF(D-1)"]]
+df_avg.loc[-1] = ["TL/MWh",df_avg["PTF(D+1)"],df_avg["PTF(D)"],df_avg["PTF(D-1)"],df_avg["SMF(D-1)"]]
 df_avg.index = df_avg.index + 1  # shifting index
-df_avg.loc[-1] = ["USD",df_avg_usd["PTF(D+1)"],df_avg_usd["PTF(D)"],df_avg_usd["PTF(D-1)"],df_avg_usd["SMF(D-1)"]]
+df_avg.loc[-1] = ["USD/MWh",df_avg_usd["PTF(D+1)"],df_avg_usd["PTF(D)"],df_avg_usd["PTF(D-1)"],df_avg_usd["SMF(D-1)"]]
 df_avg.index = df_avg.index + 1  # shifting index
-df_avg.loc[-1] = ["EUR",df_avg_eur["PTF(D+1)"],df_avg_eur["PTF(D)"],df_avg_eur["PTF(D-1)"],df_avg_eur["SMF(D-1)"]]
+df_avg.loc[-1] = ["EUR/MWh",df_avg_eur["PTF(D+1)"],df_avg_eur["PTF(D)"],df_avg_eur["PTF(D-1)"],df_avg_eur["SMF(D-1)"]]
 df_avg.sort_index(inplace=True)
 df_avg = df_avg[:-1]
 df_avg = df_avg.iloc[::-1]
@@ -184,10 +187,10 @@ table_new = dash_table.DataTable(
         df_display.to_dict('records'),
     
     [
-        dict(id = "Saat", name = "Saat" , type = "numeric", format = Format() ),
-        dict(id = "PTF(D+1)", name = "PTF (D+1)" , type = "numeric", format = Format(precision =6).group(True)),
-        dict(id = "PTF(D)", name = "PTF (D)" , type = "numeric", format = Format(precision =6).group(True)),
-        dict(id = "PTF(D-1)", name = "PTF (D-1)" , type = "numeric", format = Format(precision =6).group(True)),
+        dict(id = "Saat", name = "Saatlik PTF" , type = "numeric", format = Format() ),
+        dict(id = "PTF(D+1)", name = "D+1" , type = "numeric", format = Format(precision =6).group(True)),
+        dict(id = "PTF(D)", name = "D" , type = "numeric", format = Format(precision =6).group(True)),
+        dict(id = "PTF(D-1)", name = "D-1" , type = "numeric", format = Format(precision =6).group(True)),
     ],
 
     style_as_list_view=True,
@@ -333,11 +336,18 @@ ptf_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=800,
-    height=500,
+    height=475,
 )
 
 ptf_fig.update_xaxes(range=[0, 23], constrain='domain')
 ptf_fig.update_xaxes(dtick=1)
+
+#min value in df
+min_value_ptf_fig = df.min().min()
+max_value_ptf_fig = df.max().max()
+
+ptf_fig.update_yaxes(range=[min_value_ptf_fig, max_value_ptf_fig+500], constrain='domain')
+ptf_fig.update_yaxes(dtick=500)
 
 ptf_fig.update_traces(name="D-1", selector=dict(name="PTF(D-1)"))
 ptf_fig.update_traces(name="D", selector=dict(name="PTF(D)"))
@@ -354,41 +364,7 @@ ptf_fig.add_layout_image(
     ))
 
 
-ptf_smf_fig = px.line(df, x="Saat", y=["PTF(D-1)","SMF(D-1)"], 
-                      title='PTF SMF İstatistikleri (D-1)',
-                      labels={"value": "Fiyat (TL/MWh)", "variable":""},
-                      template="plotly_white",
-                      range_x=[0,23],
-                      )
 
-ptf_smf_fig.update_layout(
-    legend=dict(
-        orientation="h",  # Yatay (horizontal) legend
-        x=0.5,  # Legendi grafiğin ortasına hizala
-        y=-0.15,  # X ekseni başlığından biraz daha aşağıda
-        xanchor="center",  # X eksenindeki hizalamayı ortala
-    ),
-    width=625,
-    height=450,
-    margin=dict(t=40, b=120),
-)
-
-ptf_smf_fig.add_layout_image(
-    dict(
-        source=watermark_src,
-        xref="paper", yref="paper",
-        x=0.5, y=0.5,  # Resmi ortala
-        sizex=1.5, sizey=1.5,  # Resmin boyutunu ayarla
-        xanchor="center", yanchor="middle",  # Resmin konumunu ayarla
-        opacity=0.05,  # Resmi yarı şeffaf yap
-    ))
-
-
-ptf_smf_fig.update_xaxes(range=[0, 23], constrain='domain')
-ptf_smf_fig.update_xaxes(dtick=1)
-
-ptf_smf_fig.update_traces(name="PTF", selector=dict(name="PTF(D-1)"))
-ptf_smf_fig.update_traces(name="SMF", selector=dict(name="SMF(D-1)"))
 
 
 month_to_date = ptf(first_day_of_the_month, today)
@@ -523,7 +499,7 @@ fig_usd.update_traces(texttemplate='%{text:.2f}', textposition='inside')
 
 # Subplot'ları oluştur (3 sütun ve 1 satır)
 fig = make_subplots(rows=1, cols=2, shared_xaxes=False, horizontal_spacing=0.1,
-                    subplot_titles=('TL','USD'))
+                    subplot_titles=('PTF(TL/MWh)','PTF(USD/MWh)'))
 
 
 
@@ -542,49 +518,50 @@ for trace in fig_usd.data:
 fig.add_annotation(
     x=tl_date_summary['Periyot'][2], 
     y=tl_date_summary['Fiyat'][2], # Biraz daha yukarıda yer alması için 10 ekledim
-    text=f"{değişim[0]}🠫",
+    text=f"<b>{değişim[0]}🡻</b>",
     showarrow=False,
-    font=dict(color="red", size=16),
+    #bold
+    font=dict(color="red", size=12),
     row=1, col=1,
     yshift=20,
-    xshift=45
+    xshift=32
 )
 
 fig.add_annotation(
     x=tl_date_summary['Periyot'][3], 
     y=tl_date_summary['Fiyat'][3], # Biraz daha yukarıda yer alması için 10 ekledim
-    text=f"{değişim[1]}🠫",
+    text=f"<b>{değişim[1]}🡻</b>",
     showarrow=False,
-    font=dict(color="red", size=16),
+    font=dict(color="red", size=12),
     row=1, col=1,
     yshift=20,
-    xshift=45
+    xshift=32
 )
 
 fig.add_annotation(
     x=usd_date_summary['Periyot'][2], 
     y=usd_date_summary['Fiyat'][2], # Biraz daha yukarıda yer alması için 10 ekledim
-    text=f"{değişim[2]}🠫",
+    text=f"<b>{değişim[2]}🡻</b>",
     showarrow=False,
-    font=dict(color="red", size=16),
+    font=dict(color="red", size=12),
     row=1, col=2,
     yshift=20,
-    xshift=45
+    xshift=32
 )
 
 fig.add_annotation(
     x=usd_date_summary['Periyot'][3], 
     y=usd_date_summary['Fiyat'][3], # Biraz daha yukarıda yer alması için 10 ekledim
-    text=f"{değişim[3]}🠫",
+    text=f"<b>{değişim[3]}🡻</b>",
     showarrow=False,
-    font=dict(color="red", size=16),
+    font=dict(color="red", size=12),
     row=1, col=2,
     yshift=20,
-    xshift=45
+    xshift=32
 )
 
 # Grafiğin layout'ını güncelle
-fig.update_layout(height=500, width=800, title_text="Fiyat Değişim Grafiği")
+fig.update_layout(height=475, width=800, title_text="")
 
 # Set y-axes range
 fig.update_yaxes(range=[0, 4000], row=1, col=1)
@@ -612,16 +589,17 @@ fig.add_annotation(
     xref="paper",
     yref="paper",
     x=0,
-    y=-0.24,
-    text="<b>Ay Başından Bugüne</b>, içinden bulunduğumuz ayın ilk gününden; <b>Yıl Başından Bugüne</b>, yılın ilk gününden rapor tarihine kadar<br>olan dönemi ifade etmektedir.",
+    y=-0.30,
+    text="<i><b>Ay Başından Bugüne</b>, içinden bulunduğumuz ayın ilk gününden; <b>Yıl Başından Bugüne</b>, yılın ilk gününden rapor tarihine kadar<br>olan dönemi ifade etmektedir.</i>",
     showarrow=False,
-    font=dict(color="#73777B", size=9),
+    font=dict(color="#73777B", size=10,family="Arial"),
     yanchor="top",
     xanchor="left",
+    align="left",
 )
 
 
-fig.update_layout(margin=dict(t=20, b=120))
+fig.update_layout(margin=dict(t=80, b=120))
 
 fig.add_layout_image(
     dict(
@@ -662,12 +640,16 @@ load_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
 )
+
+
 
 
 load_fig.update_xaxes(range=[0, 23], constrain='domain')
 load_fig.update_xaxes(dtick=1)
+
+load_fig.update_yaxes(exponentformat='none', showexponent='none')
 
 load_fig.update_traces(name="D-1", selector=dict(name="Yük Tahmini (D-1)"))
 load_fig.update_traces(name="D", selector=dict(name="Yük Tahmini (D)"))
@@ -678,9 +660,9 @@ load_fig.add_annotation(
     yref="paper",
     x=-0,
     y=-0.25,
-    text="<b>Yük Tahmin Planı</b>, sistem operatörü (TEİAŞ) tarafından saatlik bazda yapılan talep tahminidir.",
+    text="<i><b>Yük Tahmin Planı</b>, sistem operatörü (TEİAŞ) tarafından saatlik bazda yapılan talep tahminidir.</i>",
     showarrow=False,
-    font=dict(color="#73777B", size=9),
+    font=dict(color="#73777B", size=10,family="Arial"),
     yanchor="top",
     xanchor="left",
 )
@@ -724,7 +706,7 @@ production_fb_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
 )
 
 
@@ -737,16 +719,17 @@ production_fb_fig.update_xaxes(range=[0, 23], constrain='domain')
 production_fb_fig.update_xaxes(dtick=1)
 production_fb_fig.update_yaxes(range=[0, 25_000])
 production_fb_fig.update_yaxes(dtick=2500)
+production_fb_fig.update_yaxes(exponentformat='none', showexponent='none')
 
 production_fb_fig.add_annotation(
     xref="paper",
     yref="paper",
     x=-0,
     y=-0.25,
-    text="Spot piyasa fiyatlarından bağımsız olarak üretim gerçekleştirip satışa sunan,<b>akarsu</b>; <b>rüzgar</b>;" +
-         "<br>" + "<b>jeotermal</b>; <b>biyokütle</b> ve <b>güneş</b> enerjisi santrallerinin saatlik üretim planlamasıdır.",
+    text="<i>Spot piyasa fiyatlarından bağımsız olarak üretim gerçekleştirip satışa sunan,<b>akarsu</b>; <b>rüzgar</b>;" +
+         "<br>" + "<b>jeotermal</b>; <b>biyokütle</b> ve <b>güneş</b> enerjisi santrallerinin saatlik üretim planlamasıdır.</i>",
     showarrow=False,
-    font=dict(color="#73777B", size=9),
+    font=dict(color="#73777B", size=10,family="Arial"),
     align="left",
     yanchor="top",
     xanchor="left",
@@ -795,7 +778,7 @@ coal_kgup['Kömür KGUP (D+1)'] = tomorrow_production["Ithalkomur"] + tomorrow_p
 
 coal_kgup_fig = px.line(coal_kgup, x="Saat", y=["Kömür KGUP (D-1)","Kömür KGUP (D)","Kömür KGUP (D+1)"],
                             title='Kömürden Elektrik Üretimi',
-                            labels={"value": "Kömür Üretim (MWh)", "variable":""},
+                            labels={"value": "Üretim (MWh)", "variable":""},
                             template="plotly_white")
 
 coal_kgup_fig.update_layout(
@@ -806,13 +789,14 @@ coal_kgup_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
 )
 
 coal_kgup_fig.update_xaxes(range=[0, 23], constrain='domain')
 coal_kgup_fig.update_xaxes(dtick=1)
 coal_kgup_fig.update_yaxes(range=[0, 25_000])
 coal_kgup_fig.update_yaxes(dtick=2500)
+coal_kgup_fig.update_yaxes(exponentformat='none', showexponent='none')
 
 coal_kgup_fig.update_traces(name="D-1", selector=dict(name="Kömür KGUP (D-1)"))
 coal_kgup_fig.update_traces(name="D", selector=dict(name="Kömür KGUP (D)"))
@@ -823,9 +807,9 @@ coal_kgup_fig.add_annotation(
     yref="paper",
     x=-0,
     y=-0.25,
-    text="<b>Yerli</b> ve <b>ithal kömür</b> santrallerinin saatlik üretim planlamasıdır.",
+    text="<i><b>Yerli</b> ve <b>ithal kömür</b> santrallerinin saatlik üretim planlamasıdır.</i>",
     showarrow=False,
-    font=dict(color="#73777B", size=9),
+    font=dict(color="#73777B", size=10,family="Arial"),
     yanchor="top",
     xanchor="left",
 )
@@ -864,13 +848,14 @@ kalan_yük_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
 )
 
 kalan_yük_fig.update_xaxes(range=[0, 23], constrain='domain')
 kalan_yük_fig.update_xaxes(dtick=1)
 kalan_yük_fig.update_yaxes(range=[0, 25_000])
 kalan_yük_fig.update_yaxes(dtick=2500)
+kalan_yük_fig.update_yaxes(exponentformat='none', showexponent='none')
 
 kalan_yük_fig.update_traces(name="D-1", selector=dict(name="Kalan Yük (D-1)"))
 kalan_yük_fig.update_traces(name="D", selector=dict(name="Kalan Yük (D)"))
@@ -881,9 +866,9 @@ kalan_yük_fig.add_annotation(
     yref="paper",
     x=-0,
     y=-0.25,
-    text="Yük Tahmin Planından, Fiyat Bağımsız Yenilenebilir Enerji Üretimi ve Kömürden Elektrik Üretimi" + "<br>" +"düşüldükten sonra kalan taleptir.",
+    text="<i>Yük Tahmin Planından, Fiyat Bağımsız Yenilenebilir Enerji Üretimi ve Kömürden Elektrik Üretimi" + "<br>" +"düşüldükten sonra kalan taleptir.</i>",
     showarrow=False,
-    font=dict(color="#73777B", size=9),
+    font=dict(color="#73777B", size=10,family="Arial"),
     align="left",
     yanchor="top",
     xanchor="left",
@@ -969,7 +954,7 @@ week_start_date = datetime.strptime(week_start_date, '%Y-%m-%d')
 merged = pd.concat([week1, week2, week3, week4], axis=0)
 
 table_last_four_week = pd.DataFrame(columns=["Hafta","Veri Tipi", "Pzt", "Salı","Çarş","Perş","Cuma","Cmt","Paz"])
-table_last_four_week["Hafta"] = [week_start_date.strftime("%d-%m") + "-" + (week_start_date+timedelta(days=6)).strftime("%d.%m"),"","",(week_start_date + timedelta(days=7)).strftime("%d.%m") + "-" + (week_start_date + timedelta(days=13)).strftime("%d.%m") ,"","", (week_start_date + timedelta(days=14)).strftime("%d.%m") + "-" + (week_start_date + timedelta(days=20)).strftime("%d.%m"),"","", (week_start_date + timedelta(days=21)).strftime("%d.%m") + "-" + (week_start_date + timedelta(days=27)).strftime("%d.%m"),"",""]
+table_last_four_week["Hafta"] = [week_start_date.strftime("%d.%m") + " - " + (week_start_date+timedelta(days=6)).strftime("%d.%m"),"","",(week_start_date + timedelta(days=7)).strftime("%d.%m") + " - " + (week_start_date + timedelta(days=13)).strftime("%d.%m") ,"","", (week_start_date + timedelta(days=14)).strftime("%d.%m") + " - " + (week_start_date + timedelta(days=20)).strftime("%d.%m"),"","", (week_start_date + timedelta(days=21)).strftime("%d.%m") + " - " + (week_start_date + timedelta(days=27)).strftime("%d.%m"),"",""]
 table_last_four_week["Veri Tipi"] = ["PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (MWh)","PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (MWh)","PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (MWh)","PTF (TL/MWh)", "PTF (USD/MWh)","Tüketim (MWh)"]
 table_last_four_week["Pzt"] = merged["Pzt"].values
 table_last_four_week["Salı"] = merged["Salı"].values
@@ -1028,8 +1013,8 @@ table_week = dash_table.DataTable(
             dict(id = "Cuma", name = "Cuma" , type = "numeric", format = Format().group(True)),
             dict(id = "Cmt", name = "Cmt" , type = "numeric", format = Format().group(True)),
             dict(id = "Paz", name = "Paz" , type = "numeric", format = Format().group(True)),
-            dict(id = "Ort", name = "Ort" , type = "numeric", format = Format().group(True)),
-            dict(id = "Değişim Oranı", name = "Değişim Oranı" , type = "text"),
+            dict(id = "Ort", name = "Haftalık Ortalama" , type = "numeric", format = Format().group(True)),
+            dict(id = "Değişim Oranı", name = "Haftalık Değişim (%)" , type = "text"),
 
         ],
 
@@ -1160,7 +1145,7 @@ df_dgp_display['totalP'] = gip_table['totalP'].apply(lambda x: f'{x:.2f}'.replac
 df_dgp_display['max200P'] = gip_table['max200P'].apply(lambda x: f'{x:.2f}'.replace('.', ','))
 df_dgp_display['min200P'] = gip_table['min200P'].apply(lambda x: f'{x:.2f}'.replace('.', ','))
 df_dgp_display['Sistem Yönü'] = yesterday_order['Sistem Yönü']
-df_dgp["PTF - GİP"] = round(df_dgp["PTF"] - gip_table["totalP"],2)
+df_dgp["PTF - GİP AOF"] = round(df_dgp["PTF"] - gip_table["totalP"],2)
 df_dgp["PTF - +EDF"] = round(df_dgp["PTF"] - df_dgp["Pozitif Dengesizlik Fiyatı"],2)
 df_dgp["PTF - -EDF"] = round(df_dgp["PTF"] - df_dgp["Negatif Dengesizlik Fiyatı"],2)
 
@@ -1174,12 +1159,12 @@ table_dgp_new = dash_table.DataTable(
         dict(id = "Saat", name = "Saat" , type = "numeric", format = Format() ),
         dict(id = "PTF", name = "PTF" , type = "numeric", format = Format().group(True)),
         dict(id = "SMF", name = "SMF" , type = "numeric", format = Format().group(True)),
-        dict(id = "Pozitif Dengesizlik Fiyatı", name = "Pozitif Dengesizlik Fiyatı" , type = "numeric", format = Format().group(True)),
-        dict(id = "Negatif Dengesizlik Fiyatı", name = "Negatif Dengesizlik Fiyatı" , type = "numeric", format = Format().group(True)),
-        dict(id = "totalV", name = "GİP İşlem Hacmi" , type = "numeric", format = Format().group(True)),
-        dict(id = "totalP", name = "GİP Ağırlıklı Ort. Fiyat" , type = "numeric", format = Format().group(True)),
+        dict(id = "Pozitif Dengesizlik Fiyatı", name = "(+) Dengesizlik Fiyatı" , type = "numeric", format = Format().group(True)),
+        dict(id = "Negatif Dengesizlik Fiyatı", name = "(-) Dengesizlik Fiyatı" , type = "numeric", format = Format().group(True)),
+        dict(id = "totalP", name = "GİP AOF" , type = "numeric", format = Format().group(True)),
         dict(id = "min200P", name = "GİP Minimum 200MWh" , type = "numeric", format = Format().group(True)),
         dict(id = "max200P", name = "GİP Maksimum 200MWh" , type = "numeric", format = Format().group(True)),
+        dict(id = "totalV", name = "GİP İşlem Hacmi" , type = "numeric", format = Format().group(True)),
         dict(id = "Sistem Yönü", name = "Sistem Yönü" , type = "text"),
         dict(id = "Net Talimat Hacmi", name = "Net Talimat Hacmi" , type = "text"),
 
@@ -1254,7 +1239,7 @@ table_dgp_new = dash_table.DataTable(
 
 edmal_fig = px.bar(df_dgp, x="Saat", y=["+EDMal","-EDMal"],
                      title='Dengesizlik Maliyeti İstatistikleri (D-1)',
-                     labels={"value": "EDMal (TL/MWh)", "variable":""},
+                     labels={"value": "Enerji Dengesizlik Maliyeti (TL/MWh)", "variable":""},
                      template="plotly_white",
                      barmode="group",
                      color_discrete_sequence=["#285A84","#E13915"])
@@ -1267,7 +1252,7 @@ edmal_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
 )
 
 edmal_fig.update_xaxes(range=[0, 23], constrain='domain')
@@ -1291,10 +1276,10 @@ edmal_fig.add_annotation(
     yref="paper",
     x=-0,
     y=-0.25,
-    text="Her 1 MWh'lik pozitif (enerji fazlası) ve negatif (enerji açığı) dengesizliğin TL/MWh cinsinden"+ 
-    "<br>" + "saatlik bazda birim maliyeti gösterilmektedir.",
+    text="<i>Her 1 MWh'lik pozitif (enerji fazlası) ve negatif (enerji açığı) dengesizliğin TL/MWh cinsinden"+ 
+    "<br>" + "saatlik bazda birim maliyeti gösterilmektedir.</i>",
     showarrow=False,
-    font=dict(color="#73777B", size=9),
+    font=dict(color="#73777B", size=10,family="Arial"),
     align="left",
     yanchor="top",
     xanchor="left",
@@ -1312,7 +1297,7 @@ df_makas["Net Talimat Hacmi"] = yesterday_order["Net Talimat"]
 
 colors = ['#28A745' if val < 0 else '#E13915' for val in df_makas["Net Talimat Hacmi"]] 
 makas_fig = px.line(df_makas, x="Saat", y=["Makas"],
-                        title='Talimat Hacmine göre PTF-SMF Farkı (D-1)',
+                        title='Talimat Hacmine ve PTF-SMF Farkı (D-1)',
                         labels={"value": "PTF-SMF (TL/MWh)", "variable":""},
                         template="plotly_white",
                         color_discrete_sequence=["#285A84","#E13915"],
@@ -1359,7 +1344,7 @@ makas_fig.update_layout(
         range=[-y2_max, y2_max],
     ),
     width=625,
-    height=450,
+    height=475,
 )
 
 makas_fig.add_annotation(
@@ -1367,10 +1352,10 @@ makas_fig.add_annotation(
     yref="paper",
     x=-0,
     y=-0.25,
-    text="Piyasa Takas Fiyatı ile aynı saate ait Sistem Marjinal Fiyatının farkı ve bu farkın" + 
-    "<br>" + "Net Talimat Hacmi ile ilişkisi gösterilmektedir.",
+    text="<i>Piyasa Takas Fiyatı ile aynı saate ait Sistem Marjinal Fiyatının farkı ve bu farkın" + 
+    "<br>" + "Net Talimat Hacmi ile ilişkisi gösterilmektedir.</i>",
     showarrow=False,
-    font=dict(color="#73777B", size=9),
+    font=dict(color="#73777B", size=10,family="Arial"),
     align="left",
     yanchor="top",
     xanchor="left",
@@ -1422,8 +1407,8 @@ makas_fig.update_xaxes(showticklabels=False)
 
 ####### """
 
-gip_fig = px.line(df_dgp, x="Saat", y= ["PTF - GİP"],
-                        title='GİP Grafiği (D-1)',
+gip_fig = px.line(df_dgp, x="Saat", y= ["PTF - GİP AOF"],
+                        title='PTF, GİP AOF ve Dengesizlik Fiyatlarının İlişkisi (D-1)',
                         labels={"value": "Fiyat (TL/MWh)", "variable":""},
                         template="plotly_white",
                         color_discrete_sequence=["#285A84","#E13915"],
@@ -1437,7 +1422,7 @@ gip_fig.add_trace(go.Scatter(x=df_dgp["Saat"], y=df_dgp["PTF - -EDF"], name="PTF
 
 ptf_pedf = (df_dgp["PTF - +EDF"].abs()).max()
 ptf_nedf = (df_dgp["PTF - -EDF"].abs()).max()
-ptf_gip = (df_dgp["PTF - GİP"].abs()).max()
+ptf_gip = (df_dgp["PTF - GİP AOF"].abs()).max()
 
 max_df_dgp = pd.Series([ptf_pedf, ptf_nedf, ptf_gip]).max() + 100
 
@@ -1454,7 +1439,7 @@ gip_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
 )
 
 gip_fig.add_annotation(
@@ -1462,9 +1447,9 @@ gip_fig.add_annotation(
     yref="paper",
     x=-0,
     y=-0.25,
-    text="Piyasa Takas Fiyatı ile aynı saate ait saatlik GİP işlemlerinin ağırlıklı ortalama fiyatının farkının,"+ "<br>" +"ilgili saatin Pozitif ve Negatif Dengesizlik Maliyeti ile ilişkisi gösterilmektedir.",
+    text="<i>Piyasa Takas Fiyatı'nın, saatlik GİP işlemlerinin ağırlıklı ortalama fiyatı,"+ "<br>" +"Pozitif Dengesizlik Fiyatı ve Negatif Dengesizlik Fiyatı ile farkı gösterilmektedir.</i>",
     showarrow=False,
-    font=dict(color="#73777B", size=9),
+    font=dict(color="#73777B", size=10,family="Arial"),
     align="left",
     yanchor="top",
     xanchor="left",
@@ -1482,6 +1467,52 @@ gip_fig.add_layout_image(
         xanchor="center", yanchor="middle",  # Resmin konumunu ayarla
         opacity=0.05,  # Resmi yarı şeffaf yap
     ))
+
+ptf_smf_gip_df = pd.DataFrame(columns=['Saat', 'PTF(D-1)',"SMF(D-1)","GİP AOF(D-1)"])
+ptf_smf_gip_df["Saat"] = saat
+ptf_smf_gip_df["PTF(D-1)"] = price_yesterday["PTF"]
+ptf_smf_gip_df["SMF(D-1)"] = price_yesterday["SMF"]
+ptf_smf_gip_df["GİP AOF(D-1)"] = gip_table["totalP"]
+
+ptf_smf_fig = px.line(ptf_smf_gip_df, x="Saat", y=["PTF(D-1)","SMF(D-1)","GİP AOF(D-1)"], 
+                      title='PTF SMF ve GİP AOF İstatistikleri (D-1)',
+                      labels={"value": "Fiyat (TL/MWh)", "variable":""},
+                      template="plotly_white",
+                      range_x=[0,23],
+                      )
+
+ptf_smf_fig.update_layout(
+    legend=dict(
+        orientation="h",  # Yatay (horizontal) legend
+        x=0.5,  # Legendi grafiğin ortasına hizala
+        y=-0.15,  # X ekseni başlığından biraz daha aşağıda
+        xanchor="center",  # X eksenindeki hizalamayı ortala
+    ),
+    width=625,
+    height=475,
+)
+ptf_smf_fig.update_layout(margin=dict(t=40, b=120))
+
+ptf_smf_fig.add_layout_image(
+    dict(
+        source=watermark_src,
+        xref="paper", yref="paper",
+        x=0.5, y=0.5,  # Resmi ortala
+        sizex=1.5, sizey=1.5,  # Resmin boyutunu ayarla
+        xanchor="center", yanchor="middle",  # Resmin konumunu ayarla
+        opacity=0.05,  # Resmi yarı şeffaf yap
+    ))
+
+
+ptf_smf_fig.update_xaxes(range=[0, 23], constrain='domain')
+ptf_smf_fig.update_xaxes(dtick=1)
+
+ptf_smf_fig.update_yaxes(range=[0, 3000], constrain='domain')
+ptf_smf_fig.update_yaxes(dtick=500)
+
+ptf_smf_fig.update_traces(name="PTF", selector=dict(name="PTF(D-1)"))
+ptf_smf_fig.update_traces(name="SMF", selector=dict(name="SMF(D-1)"))
+ptf_smf_fig.update_traces(name="GİP AOF", selector=dict(name="GİP AOF(D-1)"))
 
 
 production_T = get_real_time_production_transposed(yesterday, yesterday)
@@ -1535,6 +1566,7 @@ table_production_T = dash_table.DataTable(
         {
             'if': {'column_id': 'Kaynak Tipi'},
             'text-align': 'left',
+            "fontWeight": "bold",
         },
         {
             "if": {"row_index": -1},
@@ -1620,7 +1652,7 @@ yearly_price_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
     margin=dict(t=40, b=120),
 )
 
@@ -1654,12 +1686,15 @@ yearly_price_usd_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
     margin=dict(t=40, b=120),
 )
 
 yearly_price_usd_fig.update_xaxes(range=[1, 12], constrain='domain')
 yearly_price_usd_fig.update_xaxes(dtick=1)
+
+yearly_price_usd_fig.update_yaxes(range=[0, 250], constrain='domain')
+yearly_price_usd_fig.update_yaxes(dtick=50)
 
 yearly_price_usd_fig.update_traces(name="2021", selector=dict(name="2021 (USD)"))
 yearly_price_usd_fig.update_traces(name="2022", selector=dict(name="2022 (USD)"))
@@ -1714,7 +1749,7 @@ yearly_cons_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
     margin=dict(t=40, b=120),
 )
 
@@ -1783,7 +1818,7 @@ price_2023["Ay"] = price_2023["Tarih"].dt.month
 price_2023.set_index("Tarih", inplace=True)
 price_2023_aylik = price_2023.groupby(pd.Grouper(freq="M")).agg({'PTF': 'mean', 'SMF': 'mean', '+EDF': 'mean', '-EDF': 'mean', '+EDMal': 'mean', '-EDMal': 'mean'})
 price_2023_aylik = price_2023_aylik.reset_index()   
-price_2023_aylik["Ay"] = range(1,int(datetime.today().strftime('%m')) +1)
+price_2023_aylik["Ay"] = range(1,int(datetime.strptime(today, '%Y-%m-%d').month) +1)
 
 
 yearly_price = pd.DataFrame(columns=["Ay","2021 PTF", "2022 PTF", "2023 PTF","2021 +EDMal", "2022 +EDMal", "2023 +EDMal", "2021 -EDMal", "2022 -EDMal", "2023 -EDMal"])
@@ -1818,7 +1853,7 @@ yearly_positive_edmal_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
     margin=dict(t=40, b=120),
 )
 
@@ -1853,7 +1888,7 @@ yearly_negative_edmal_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
     margin=dict(t=40, b=120),
 )
 
@@ -1890,7 +1925,7 @@ yearly_positive_edmal_ptf_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
 )
 
 yearly_positive_edmal_ptf_fig.update_xaxes(range=[1, 12], constrain='domain')
@@ -1906,9 +1941,9 @@ yearly_positive_edmal_ptf_fig.add_annotation(
     yref="paper",
     x=-0,
     y=-0.25,
-    text="Aylık ortalama Birim Pozitif Enerji Dengesizlik Maliyetinin, aynı aya ait Piyasa Takas Fiyatı" +"<br>" + "ortalamasına oranı gösterilmektedir.",
+    text="<i>Aylık ortalama Birim Pozitif Enerji Dengesizlik Maliyetinin, aynı aya ait Piyasa Takas Fiyatı" +"<br>" + "ortalamasına oranı gösterilmektedir.</i>",
     showarrow=False,
-    font=dict(color="#73777B", size=9),
+    font=dict(color="#73777B", size=10,family="Arial"),
     align="left",
     yanchor="top",
     xanchor="left",
@@ -1941,7 +1976,7 @@ yearly_negative_edmal_ptf_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
 )
 
 yearly_negative_edmal_ptf_fig.update_xaxes(range=[1, 12], constrain='domain')
@@ -1957,10 +1992,10 @@ yearly_negative_edmal_ptf_fig.add_annotation(
     yref="paper",
     x=-0,
     y=-0.25,
-    text="Aylık ortalama Birim Negatif Enerji Dengesizlik Maliyetinin, aynı aya ait Piyasa Takas Fiyatı" + 
-    "<br>" + "ortalamasına oranı gösterilmektedir.",
+    text="<i>Aylık ortalama Birim Negatif Enerji Dengesizlik Maliyetinin, aynı aya ait Piyasa Takas Fiyatı" + 
+    "<br>" + "ortalamasına oranı gösterilmektedir.</i>",
     showarrow=False,
-    font=dict(color="#73777B", size=9),
+    font=dict(color="#73777B", size=10,family="Arial"),
     align="left",
     yanchor="top",
     xanchor="left",
@@ -1994,13 +2029,15 @@ akarsu_kf["Ay"] = akarsu_kf_2021.index + 1
 akarsu_kf["2021"] = akarsu_kf_2021["Kapasite Faktörü"]
 akarsu_kf["2022"] = akarsu_kf_2022["Kapasite Faktörü"]
 akarsu_kf["2023"] = akarsu_kf_2023["Kapasite Faktörü"]
+akarsu_kf["Uzun Yıllar Ort."] = [0.22,0.28,0.4,0.52,0.49,0.35,0.21,0.16,0.14,0.14,0.13,0.17]
+
 
 akarsu_kf
 
 akarsu_kf_fig = px.line(akarsu_kf, x="Ay", y=["2021","2022","2023"],
                             title='Yıllara Göre Akarsu Kapasite Faktörü İstatistiği',
                             labels={"value": "Kapasite Faktörü", "variable":""},
-                            template="plotly_white")
+                            template="plotly_white",)
 
 akarsu_kf_fig.update_layout(
     legend=dict(
@@ -2010,10 +2047,13 @@ akarsu_kf_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
     margin=dict(t=40, b=120),
 
 )
+
+#add Uzun Yıllar Ort. line
+akarsu_kf_fig.add_scatter(x=akarsu_kf["Ay"], y=akarsu_kf["Uzun Yıllar Ort."], name="Uzun Yıllar Ort.", mode="lines",line=dict(color="black", dash="dash"))
 
 akarsu_kf_fig.update_xaxes(range=[1, 12], constrain='domain')
 akarsu_kf_fig.update_xaxes(dtick=1)
@@ -2041,15 +2081,20 @@ rüzgar_kf_2021 = rüzgar_kf_2021.set_index("Tarih")
 rüzgar_kf_2021 = rüzgar_kf_2021.reset_index(drop=True)
 rüzgar_kf_2022 = rüzgar_kf_2022.reset_index(drop=True)
 rüzgar_kf_2023 = rüzgar_kf_2023.reset_index(drop=True)
+
 rüzgar_kf["Ay"] = rüzgar_kf_2021.index + 1
 rüzgar_kf["2021"] = rüzgar_kf_2021["Kapasite Faktörü"]
 rüzgar_kf["2022"] = rüzgar_kf_2022["Kapasite Faktörü"]
 rüzgar_kf["2023"] = rüzgar_kf_2023["Kapasite Faktörü"]
+rüzgar_kf["Uzun Yıllar Ort."] = [0.37,0.37,0.36,0.29,0.26,0.28,0.42,0.42,0.32,0.29,0.32,0.35]
 
 rüzgar_kf_fig = px.line(rüzgar_kf, x="Ay", y=["2021","2022","2023"],
                             title='Yıllara Göre Rüzgar Kapasite Faktörü İstatistiği',
                             labels={"value": "Kapasite Faktörü", "variable":""},
                             template="plotly_white")
+
+#add Uzun Yıllar Ort. line, color black, dashed
+rüzgar_kf_fig.add_scatter(x=rüzgar_kf["Ay"], y=rüzgar_kf["Uzun Yıllar Ort."], name="Uzun Yıllar Ort.", mode="lines", line=dict(color="black", dash="dash"))
 
 rüzgar_kf_fig.update_layout(
     legend=dict(
@@ -2059,7 +2104,7 @@ rüzgar_kf_fig.update_layout(
         xanchor="center",  # X eksenindeki hizalamayı ortala
     ),
     width=625,
-    height=450,
+    height=475,
     margin=dict(t=40, b=120),
 
 )
@@ -2083,7 +2128,7 @@ rüzgar_kf_fig.add_layout_image(
 
 #####################################################
 fiyat = html.Div([
-                    html.Div(style={"width":"50vw","height":"100px","background-color":"#285A84","position":"relative","top":"-30px"}),
+                    html.Div(style={"width":"50vw","height":"100px","background-color":"#285A84","position":"relative","top":"-50000px"}),
                     html.H3("Fiyat Raporu",style={"color":"#285A84",
                                                  "position":"relative",}),
                 ],id="fiyat")
@@ -2106,7 +2151,20 @@ yıllık = html.Div([
                                                  "position":"relative",}),
                 ],id="yıllık")
 
+açıklamalar = html.Div([
+                    html.Div(style={"width":"50vw","height":"100px","background-color":"#285A84","position":"relative","top":"-50000px"}),
+                    html.H6("Açıklamalar ve Sorumluluk Reddi",style={"color":"#285A84",
+                                                 "position":"relative",}),
+                ],id="açıklamalar")
+
+rapor_ismi = html.Div([
+                    html.Div(style={"width":"50vw","height":"100px","background-color":"#285A84","position":"relative","top":"-50000px"}),
+                    html.H1("Türkiye Elektrik Piyasası Raporu",style={"color":"#E13915",
+                                                 "position":"relative",}),
+                ],id="rapor_ismi")
+
 #format rapor tarihi
+
 
 nav_contents = [
     html.Ul(
@@ -2118,16 +2176,16 @@ nav_contents = [
                         ),
                         style={"display":"inline-block",
                                "float":"left"}),
-                               
-            html.Li(["Rapor Tarihi",html.Br(),rapor_tarihi],
+                                
+            html.Li(html.Div(["Rapor Tarihi",html.Br(),rapor_tarihi],
                                     style={"display":"inline-block",
                                             "margin-top":"0px",
                                             "margin-right":"20px",
-                                            "color":"#0d1f2e",
                                             "text-decoration":"none",
                                             "float":"left",
-                                            "align":"center",},
-                                            ),
+                                            "align":"center",
+                                            "color":"#0d1f2e",},
+                                            )),
 
             html.Li(html.A("Yıllık Raporlar", href="#yıllık",
                                     style={"display":"block",
@@ -2203,7 +2261,7 @@ nav_contents = [
 
 app = Dash(external_stylesheets=[dbc.themes.FLATLY])
 
-app.title = 'Gain Enerji - Günlük Piyasa Raporu'
+app.title = 'Gain Enerji - Türkiye Elektrik Piyasası Raporu'
 
 server = app.server
 app.css.config.serve_locally = True
@@ -2223,7 +2281,15 @@ app.layout = dbc.Container(
             ],
             style={"margin-bottom":"10px", "margin-top":"25px"}
         ),
-
+        dbc.Row(
+            [   
+                dbc.Col(
+                    [
+                        rapor_ismi,
+                    ],style={"margin-bottom":"-15px","margin-top":"-10px"}
+                    ),
+            ]
+        ),
         dbc.Row(
             [
             dbc.Col(
@@ -2232,7 +2298,7 @@ app.layout = dbc.Container(
                 ]
                 ),
             ],
-        style={"margin-bottom":"10px","margin-top":"-30px",}
+        style={"margin-bottom":"10px","margin-top":"-70px",}
         ),
 
         dbc.Row(
@@ -2253,12 +2319,12 @@ app.layout = dbc.Container(
                     (
                         [
                             table_new,
-                            html.P("D rapor tarihini, D-1 ve D+1 ise sırasıyla rapor tarihinden önceki ve sonraki günü ifade eder.",style={"font-size":"9px","color":"#73777B","margin-top":"20px"}),
+                            html.P("D rapor tarihini, D-1 ve D+1 ise sırasıyla rapor tarihinden önceki ve sonraki günü ifade eder.",style={"font-size":"10px","color":"#73777B","margin-top":"20px","font-style":"italic"}),
                             html.P([
                                     "Saatlik PTF değerleri ",
                                     html.B("TL/MWh"),
                                      " cinsindendir."
-                                    ], style={"font-size": "9px", "color": "#73777B","margin-top":"-10px"}),
+                                    ], style={"font-size": "10px", "color": "#73777B","margin-top":"-10px","font-style":"italic"}),
                         ],
                         style={}
                     ),
@@ -2269,8 +2335,8 @@ app.layout = dbc.Container(
 
                     dbc.Row(
                         dbc.Col([
-                            dcc.Graph(figure = ptf_fig, style={"margin-top":"-60px","margin-left":"50px"}),
-                        ],width=12,style={"margin-bottom":"10px"})
+                            dcc.Graph(figure = ptf_fig, style={"margin-top":"-50px","margin-left":"50px"}),
+                        ],width=12,style={"margin-bottom":"40px"})
                     ),
 
                     dbc.Row(
@@ -2286,13 +2352,7 @@ app.layout = dbc.Container(
         ),
 
         dbc.Row(
-            [
-                html.Hr(style={"margin-bottom":"50px","margin-top":"50px"}),
-            ]
-
-        ),
-        dbc.Row(
-            dbc.Col(html.H5("Son 4 Haftaya Ait Günlük PTF ve Tüketim Değerleri",style={"color":"#323232","margin-bottom":"10px"})),
+            dbc.Col(html.H5("Son 4 Haftaya Ait Günlük PTF ve Tüketim Değerleri",style={"color":"#323232","margin-bottom":"10px","margin-top":"30px"})),
         ),
         dbc.Row(
             [dbc.Col(
@@ -2338,7 +2398,13 @@ app.layout = dbc.Container(
                     [
                         html.H5("Kaynaklara Göre Gerçekleşen Üretim Miktarı (D-1)",style={"color":"#323232","margin-bottom":"10px"}),
                         html.Div([table_production_T]),
-                        html.P("Lisanssız güneş enerjisi santrallerinin gerçekleşen üretim değerleri gecikmeli olarak yayımlanmakta ve bu nedenle tabloda gösterilememektedir.",style={"font-size":"9px","color":"#73777B","margin-top":"20px"}),
+                        html.P(["Üretim değeri ",
+                               html.B("MWh"),
+                               ",kurulu güç değerleri",
+                               html.B("MW"),
+                               "cinsindendir"],
+                               style={"font-size":"10px","color":"#73777B","margin-top":"20px","font-style":"italic"}),
+                        html.P("Lisanssız güneş enerjisi santrallerinin gerçekleşen üretim değerleri gecikmeli olarak yayımlanmakta ve bu nedenle tabloda gösterilememektedir.",style={"font-size":"10px","color":"#73777B","margin-top":"-10px","font-style":"italic"}),
                     ],
                     style={"margin-top":"50px"}
                 ),
@@ -2378,29 +2444,29 @@ app.layout = dbc.Container(
                                     " hacim verileri.",
                                     html.B(" MWh,"),
                                     " cinsindendir."
-                                    ], style={"font-size": "9px", "color": "#73777B","margin-top":"20px"}),
+                                    ], style={"font-size": "10px", "color": "#73777B","margin-top":"20px","font-style":"italic"}),
                           html.P([  
                                     html.B("PTF,"),
                                     " Piyasa Takas Fiyatını; ",
                                     html.B("SMF,"),
                                     " Sistem Mütakabat Fiyatını ifade etmektedir.",
-                                    ], style={"font-size": "9px", "color": "#73777B","margin-top":"-10px"}),
+                                    ], style={"font-size": "10px", "color": "#73777B","margin-top":"-10px","font-style":"italic"}),
                           html.P([  
                                     html.B("GİP İşlem Hacmi,"),
                                     " saatlik tahtada gerçekleşen toplam GİP işlem miktarıdır.",
-                                    ], style={"font-size": "9px", "color": "#73777B","margin-top":"-10px"}),
+                                    ], style={"font-size": "10px", "color": "#73777B","margin-top":"-10px","font-style":"italic"}),
                           html.P([  
                                     html.B("GİP AOF,"),
                                     " saatlik tahtada gerçekleşen GİP işlemlerinin ağırlıklı ortalama fiyatıdır.",
-                                    ], style={"font-size": "9px", "color": "#73777B","margin-top":"-10px"}),
+                                    ], style={"font-size": "10px", "color": "#73777B","margin-top":"-10px","font-style":"italic"}),
                           html.P([  
                                     html.B("GİP Min 200 MWh,"),
                                     " saatlik tahtada gerçekleşen en düşük fiyatlı ilk 200 MWh'lik işlemin ağırlıklı ortalama fiyatıdır.",
-                                    ], style={"font-size": "9px", "color": "#73777B","margin-top":"-10px"}),      
+                                    ], style={"font-size": "10px", "color": "#73777B","margin-top":"-10px","font-style":"italic"}),      
                           html.P([  
                                     html.B("GİP Max 200 MWh,"),
                                     " saatlik tahtada gerçekleşen en yüksek fiyatlı ilk 200 MWh'lik işlemin ağırlıklı ortalama fiyatıdır.",
-                                    ], style={"font-size": "9px", "color": "#73777B","margin-top":"-10px"}),
+                                    ], style={"font-size": "10px", "color": "#73777B","margin-top":"-10px","font-style":"italic"}),
                           html.P([  
                                     html.B("YAL (Yük Al)"),
                                     " sistemde enerji açığı olduğunu, ",
@@ -2408,11 +2474,11 @@ app.layout = dbc.Container(
                                     " sistemde enerji fazlası olduğunu, ",
                                     html.B("DNG (Denge)"),
                                     " sistemin dengede olduğunu gösterir."
-                                    ], style={"font-size": "9px", "color": "#73777B","margin-top":"-10px"}),
+                                    ], style={"font-size": "10px", "color": "#73777B","margin-top":"-10px","font-style":"italic"}),
                           html.P([  
                                     html.B("Net Talimat Hacmi,"),
                                     " TEİAŞ tarafından ilgili saatte verilen tüm YAL (pozitif) ve YAT (negatif) talimatlarının toplamıdır.",
-                                    ], style={"font-size": "9px", "color": "#73777B","margin-top":"-10px"}),
+                                    ], style={"font-size": "10px", "color": "#73777B","margin-top":"-10px","font-style":"italic"}),
 
                         ],
                         style={"margin-bottom":"30px"}
@@ -2420,7 +2486,6 @@ app.layout = dbc.Container(
                 ],width=12
                 
               ),
-             html.Hr(style={"margin-bottom":"50px","margin-top":"50px"}),
             ]
         ),
         dbc.Row(
@@ -2500,13 +2565,29 @@ app.layout = dbc.Container(
                         dcc.Graph(figure = yearly_negative_edmal_fig, style={"margin-left":"20px"}),
                         dcc.Graph(figure = yearly_negative_edmal_ptf_fig, style={"margin-left":"20px"}),
                     ]),
-                style={"margin-bottom":"30px"},
+                style={"margin-bottom":"10px"},
                 ),
 
              html.Hr()
             ]
         ),
+
+        dbc.Row(
+            dbc.Col(
+                [
+                    açıklamalar,
+                    html.P("Bu Türkiye Elektrik Piyasası Raporu ('Rapor'), Gain Enerji Ticaret A.Ş. ('Gain') tarafından Enerji Piyasaları İşletme A.Ş. (EPİAŞ) ve Türkiye Elektrik İletim A.Ş. (TEİAŞ) tarafından kamuya açık biçimde yayımlanan veriler kullanılarak oluşturulmuştur. Gain, Rapordaki bilgilerin doğruluğu ve bütünlüğü konusunda herhangi bir garanti vermemektedir.",style={"font-size":"12px","color":"#73777B","margin-top":"-5px","font-style":"italic"}),
+                    html.P("Rapor, yalnızca bilgi vermek amacıyla hazırlanmış olup, yatırım tavsiyesi niteliği taşımamaktadır.  Bu raporun içeriğinin kullanılması sonucunda ortaya çıkabilecek her türlü maddi/manevi zarar ve kayıplardan dolayı Gain sorumlu tutulamaz.",style={"font-size":"12px","color":"#73777B","margin-top":"-10px","font-style":"italic"}),
+                    html.P("Raporda yer alan görseller, Gain'in yazılı izni olmaksızın kısmen veya tamamen kopyalanamaz.",style={"font-size":"12px","color":"#73777B","margin-top":"-10px","font-style":"italic"}),
+                ],
+            )
+
+        )
+    
+
     ]),style={"width":"1920px","height":"1080px","background-color":"white"},
+
+
 )
 
 
