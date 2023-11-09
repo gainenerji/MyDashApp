@@ -35,7 +35,7 @@ Gain Red = #E13915
 """
 saat = pd.Series(range(0,24))
 watermark_src = "https://lh3.googleusercontent.com/p/AF1QipOZB0N4E1nh2RqCcWemoZpPNCpZ6JwOc-HDzhRg=s1360-w1360-h1020"
-if datetime.today().hour >= 17:
+if datetime.today().hour >= 17 - 11:
     today = datetime.today().strftime('%Y-%m-%d')
     print(today)
     yesterday = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
